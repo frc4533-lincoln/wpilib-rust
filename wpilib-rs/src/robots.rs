@@ -1,8 +1,8 @@
-use std::{time::{Instant, Duration}, future::Future};
+use std::time::{Instant, Duration};
 
 use parking_lot::Mutex;
-use tokio::{runtime::Runtime, task::futures};
 
+use crate::command::CommandManager;
 
 static PERIODIC_TIME: Mutex<f64> = Mutex::new(0.02);
 
@@ -48,8 +48,6 @@ pub enum HarwareType {
 }
 
 pub trait RobotCore {
-    fn get_name(&self) -> String;
-
     fn start(&mut self);
 
     fn end(&mut self);
@@ -57,11 +55,9 @@ pub trait RobotCore {
     fn get_mode(&self) -> RobotMode;
 
     fn get_hardware(&self) -> HarwareType;
-
-    fn add_callback(&mut self, callback: Box<dyn Fn()>);
 }
 
-pub trait UserRobot {
+pub trait UserRobot: Send + Sync {
     //robot
     fn robot_init(&mut self);
     fn robot_periodic(&mut self);
@@ -90,20 +86,13 @@ pub trait UserRobot {
 
     //sim
     fn sim_init(&mut self) {}
-
     fn sim_periodic(&mut self) {}
 }
 
 pub struct RobotCoreImpl {
-    name: String,
-    user_robot: Box<dyn UserRobot>,
-    callbacks: Vec<Box<dyn Fn()>>
+    user_robot: Box<dyn UserRobot>
 }
 impl RobotCore for RobotCoreImpl {
-    fn get_name(&self) -> String {
-        self.name.clone()
-    }
-
     fn start(&mut self) {
         self.user_robot.robot_init();
 
@@ -168,6 +157,11 @@ impl RobotCore for RobotCoreImpl {
 
             self.user_robot.robot_periodic();
 
+            #[cfg(feature = "command")]
+            {
+                CommandManager::run();
+            }
+
             if self.get_hardware() == HarwareType::Sim {
                 self.user_robot.sim_periodic();
             }
@@ -181,7 +175,6 @@ impl RobotCore for RobotCoreImpl {
     }
 
     fn end(&mut self) {
-        
     }
 
     fn get_mode(&self) -> RobotMode {
@@ -191,8 +184,11 @@ impl RobotCore for RobotCoreImpl {
     fn get_hardware(&self) -> HarwareType {
         HarwareType::Sim
     }
+}
 
-    fn add_callback(&mut self, callback: Box<dyn Fn()>) {
-        self.callbacks.push(callback);
-    }
+pub fn run_robot(user_robot: Box<dyn UserRobot>) {
+    let mut robot = RobotCoreImpl {
+        user_robot
+    };
+    robot.start();
 }

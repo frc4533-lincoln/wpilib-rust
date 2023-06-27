@@ -2,7 +2,7 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 
 use crate::command::{
-    scheduler::CommandManager,
+    manager::{CommandManager, ConditionalScheduler},
     traits::Subsystem, Command, commands::{CommandBuilder, CommandTrait},
 };
 
@@ -60,6 +60,16 @@ fn test_subsystem() {
         subsystem.cmd_activate_motor()
     };
     CommandManager::register_subsystem(UUID, || SUBSYSTEM.lock().periodic(), default_command);
+    CommandManager::run();
+    assert!(SUBSYSTEM.lock()._is_motor_running);
+}
+
+#[test]
+fn test_conditional_scheduler() {
+    let mut scheduler = ConditionalScheduler::new();
+    scheduler.add_cond(|| true, || SUBSYSTEM.lock().cmd_activate_motor());
+
+    CommandManager::add_cond_scheduler(scheduler);
     CommandManager::run();
     assert!(SUBSYSTEM.lock()._is_motor_running);
 }

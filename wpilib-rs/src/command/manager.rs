@@ -17,6 +17,7 @@ pub struct CommandManager {
     requirements: HashMap<SubsystemUUID, CommandIndex>,
     initialized_commands: HashSet<CommandIndex>,
     orphaned_commands: HashSet<CommandIndex>,
+    cond_schedulers: Vec<ConditionalScheduler>,
 }
 
 impl CommandManager {
@@ -28,15 +29,9 @@ impl CommandManager {
             requirements: HashMap::new(),
             initialized_commands: HashSet::new(),
             orphaned_commands: HashSet::new(),
+            cond_schedulers: Vec::new(),
         }
     }
-
-    // pub fn register_subsystem(subsystem: &Box<dyn super::Subsystem>) {
-    //     let mut scheduler = MANAGER.lock();
-    //     let uuid = subsystem.get_uuid();
-    //     let cmd_idx = scheduler.add_command(subsystem.get_default_command().unwrap_or(Command::empty()));
-    //     scheduler.default_commands.insert(uuid, cmd_idx);
-    // }
 
     pub fn register_subsystem(uuid: u8, periodic_callback: fn(), default_command: Command) {
         let mut scheduler = MANAGER.lock();
@@ -48,6 +43,7 @@ impl CommandManager {
     pub fn run() {
         let mut scheduler = MANAGER.lock();
         scheduler.run_subsystems();
+        scheduler.run_cond_schedulers();
         scheduler.run_commands();
     }
 
@@ -59,6 +55,13 @@ impl CommandManager {
             if !self.requirements.contains_key(uuid) {
                 self.requirements.insert(*uuid, *cmd_idx);
             }
+        }
+    }
+
+    fn run_cond_schedulers(&mut self) {
+        let conds = self.cond_schedulers.clone();
+        for cond in conds {
+            cond.poll(self);
         }
     }
 
@@ -108,6 +111,19 @@ impl CommandManager {
         }
     }
 
+    pub(super) fn cond_schedule(&mut self, command: Command) {
+        let requirements = command.get_requirements();
+        let index = self.add_command(command);
+        if requirements.is_empty() {
+            self.orphaned_commands.insert(index);
+        } else {
+            for requirement in requirements {
+                //TODO: implement cancelation policy
+                self.requirements.insert(requirement, index);
+            }
+        }
+    }
+
     pub fn schedule(command: Command) {
         let mut scheduler = MANAGER.lock();
         let requirements = command.get_requirements();
@@ -120,5 +136,35 @@ impl CommandManager {
                 scheduler.requirements.insert(requirement, index);
             }
         }
+    }
+
+    pub fn add_cond_scheduler(scheduler: ConditionalScheduler) {
+        let mut manager = MANAGER.lock();
+        manager.cond_schedulers.push(scheduler);
+    }
+}
+
+#[derive(Clone)]
+pub struct ConditionalScheduler {
+    conds: Vec<(fn() -> bool, fn() -> Command)>,
+}
+impl ConditionalScheduler {
+    pub fn new() -> Self {
+        Self {
+            conds: Vec::new(),
+        }
+    }
+
+    pub fn poll(&self, manager: &mut CommandManager) {
+        for (cond, cmd) in &self.conds {
+            if cond() {
+                let command = cmd();
+                manager.cond_schedule(command);
+            }
+        }
+    }
+
+    pub fn add_cond(&mut self, cond: fn() -> bool, cmd: fn() -> Command) {
+        self.conds.push((cond, cmd));
     }
 }

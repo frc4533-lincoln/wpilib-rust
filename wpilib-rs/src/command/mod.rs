@@ -1,9 +1,10 @@
-pub mod scheduler;
+pub mod manager;
 pub mod traits;
 #[cfg(test)]
 mod test;
 pub mod commands;
 
-pub use scheduler::CommandManager;
+pub use manager::CommandManager;
 pub use traits::Subsystem;
 pub use commands::Command;
+pub use manager::ConditionalScheduler;

@@ -270,12 +270,12 @@ unsafe impl Send for SequentialCommand {}
 
 pub struct ProxyCommand {
     command_supplier: Box<dyn FnMut() -> Command>,
-    command: Option<Command>,
+    command: Option<Box<Command>>,
 }
 impl CommandTrait for ProxyCommand {
     fn init(&mut self) {
         if self.command.is_none() {
-            self.command = Some((self.command_supplier)());
+            self.command = Some(Box::new((self.command_supplier)()));
         }
         self.command.as_mut().unwrap().init();
     }
@@ -364,7 +364,8 @@ pub enum Command {
     Simple(SimpleBuiltCommand),
     Custom(Box<dyn CommandTrait + Send>),
     Named(NamedCommand),
-    Wait(WaitCommand)
+    Wait(WaitCommand),
+    Proxy(ProxyCommand),
 }
 impl CommandTrait for Command {
     fn init(&mut self) {
@@ -375,6 +376,7 @@ impl CommandTrait for Command {
             Command::Custom(command) => command.init(),
             Command::Named(command) => command.init(),
             Command::Wait(command) => command.init(),
+            Command::Proxy(command) => command.init(),
         }
     }
 
@@ -386,6 +388,7 @@ impl CommandTrait for Command {
             Command::Custom(command) => command.periodic(),
             Command::Named(command) => command.periodic(),
             Command::Wait(command) => command.periodic(),
+            Command::Proxy(command) => command.periodic(),
         }
     }
 
@@ -397,6 +400,7 @@ impl CommandTrait for Command {
             Command::Custom(command) => command.end(interrupted),
             Command::Named(command) => command.end(interrupted),
             Command::Wait(command) => command.end(interrupted),
+            Command::Proxy(command) => command.end(interrupted),
         }
     }
 
@@ -408,6 +412,7 @@ impl CommandTrait for Command {
             Command::Custom(command) => command.is_finished(),
             Command::Named(command) => command.is_finished(),
             Command::Wait(command) => command.is_finished(),
+            Command::Proxy(command) => command.is_finished(),
         }
     }
 
@@ -419,6 +424,7 @@ impl CommandTrait for Command {
             Command::Custom(command) => command.get_requirements(),
             Command::Named(command) => command.get_requirements(),
             Command::Wait(command) => command.get_requirements(),
+            Command::Proxy(command) => command.get_requirements(),
         }
     }
 
@@ -430,6 +436,7 @@ impl CommandTrait for Command {
             Command::Custom(command) => command.get_name(),
             Command::Named(command) => command.get_name(),
             Command::Wait(command) => command.get_name(),
+            Command::Proxy(command) => command.get_name(),
         }
     }
 }

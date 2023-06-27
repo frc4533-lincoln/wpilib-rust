@@ -1,0 +1,7 @@
+{
+    "rust-analyzer.cargo.extraEnv": {
+        "IS_RA": "true"
+    },
+    "rust-analyzer.cargo.features": [
+    ]
+}

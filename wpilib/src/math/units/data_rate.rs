@@ -57,6 +57,6 @@ impl MegabytesPerSecond {
 
 impl GigabytesPerHour {
     pub fn to_gigabyte(&self, seconds: Second) -> Gigabyte {
-        Gigabyte::new(self.value / (3600 / seconds.value()))
+        Gigabyte::new(self.value / (3600.0 / seconds.value()))
     }
 }

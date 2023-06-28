@@ -1,10 +1,12 @@
 pub mod manager;
-pub mod traits;
+pub mod subsystem;
 #[cfg(test)]
 mod test;
 pub mod commands;
+#[macro_use]
+pub mod macros;
 
 pub use manager::CommandManager;
-pub use traits::Subsystem;
+pub use subsystem::Subsystem;
 pub use commands::Command;
 pub use manager::ConditionalScheduler;

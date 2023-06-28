@@ -10,6 +10,7 @@ static MANAGER: Mutex<Lazy<CommandManager>> = Mutex::new(Lazy::new(|| CommandMan
 type CommandIndex = usize;
 type SubsystemUUID = u8;
 
+
 pub struct CommandManager {
     periodic_callbacks: Vec<Box<dyn Fn() + Send>>,
     commands: Vec<Option<Command>>,
@@ -21,6 +22,7 @@ pub struct CommandManager {
 }
 
 impl CommandManager {
+
     fn new() -> Self {
         Self {
             periodic_callbacks: Vec::new(),

@@ -1,3 +1,5 @@
+extern crate wpilib_macros;
+
 use robots::UserRobot;
 
 

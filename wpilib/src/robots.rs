@@ -191,4 +191,6 @@ pub fn run_robot(user_robot: Box<dyn UserRobot>) {
         user_robot
     };
     robot.start();
+    tracing::info!("Robot exited");
+    robot.end();
 }

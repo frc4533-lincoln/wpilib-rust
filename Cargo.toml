@@ -1,0 +1,8 @@
+# Copyright (c) 2020-2023 js-sandbox contributors. Zlib license.
+
+[workspace]
+members = [
+    "wpilib",
+    "wpilib-macros",
+    "wpilib-math",
+]

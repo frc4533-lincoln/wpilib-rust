@@ -254,6 +254,7 @@ pub fn unit(input: TokenStream) -> TokenStream {
 
     //create a new struct with the given name and type
     let struct_item = quote! {
+        #[forbid(non_camel_case_types)]
         pub struct #struct_name {
             value: #r#type,
         }

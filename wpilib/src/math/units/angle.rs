@@ -1,6 +1,8 @@
-use wpilib_macros::{unit, unit_conversion};
-use crate::math::units::angular_velocity::{DegreePerSecond, RadianPerSecond, RotationPerMinute, RotationPerSecond};
+use crate::math::units::angular_velocity::{
+    DegreePerSecond, RadianPerSecond, RotationPerMinute, RotationPerSecond,
+};
 use crate::math::units::time::Second;
+use wpilib_macros::{unit, unit_conversion};
 
 unit!(Degree, f64);
 unit!(Radian, f64);

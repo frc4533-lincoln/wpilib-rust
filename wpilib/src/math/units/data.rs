@@ -1,6 +1,8 @@
-use wpilib_macros::{unit, unit_conversion};
-use crate::math::units::data_rate::{BytesPerSecond, GigabytesPerHour, KilobytesPerSecond, MegabytesPerSecond};
+use crate::math::units::data_rate::{
+    BytesPerSecond, GigabytesPerHour, KilobytesPerSecond, MegabytesPerSecond,
+};
 use crate::math::units::time::Second;
+use wpilib_macros::{unit, unit_conversion};
 
 unit!(Byte, f64);
 unit!(Kilobyte, f64);
@@ -61,4 +63,3 @@ impl Gigabyte {
         GigabytesPerHour::new(self.value() * seconds.value() * 3600.0)
     }
 }
-

@@ -1,4 +1,6 @@
 use wpilib_macros::{unit, unit_conversion};
+use crate::math::units::linear_velocity::{FeetPerSecond, MeterPerSecond};
+use crate::math::units::time::Second;
 
 unit!(Meter, f64);
 unit!(Feet, f64);
@@ -29,6 +31,30 @@ pub fn centimeter_to_foot(centimeter: f64) -> f64 {
 }
 pub fn centimeter_to_inch(centimeter: f64) -> f64 {
     meter_to_inch(centimeter / 100.0)
+}
+
+impl Meter {
+    pub fn per_second(self, seconds: Second) -> MeterPerSecond {
+        MeterPerSecond::new(self.value() * seconds.value())
+    }
+}
+
+impl Feet {
+    pub fn per_second(self, seconds: Second) -> FeetPerSecond {
+        FeetPerSecond::new(self.value() * seconds.value())
+    }
+}
+
+impl Inch {
+    pub fn to_feet_per_second(self, seconds: Second) -> FeetPerSecond {
+        FeetPerSecond::new(self.value() * seconds.value() / 12.0)
+    }
+}
+
+impl Centimeter {
+    pub fn to_meter_per_second(self, seconds: Second) -> MeterPerSecond {
+        MeterPerSecond::new(self.value() * seconds.value() / 100.0)
+    }
 }
 
 #[cfg(test)]

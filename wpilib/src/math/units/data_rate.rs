@@ -3,13 +3,13 @@ use wpilib_macros::{unit, unit_conversion};
 unit!(BytesPerSecond, f64);
 unit!(KilobytesPerSecond, f64);
 unit!(MegabytesPerSecond, f64);
-unit!(GigabytesPerSecond, f64);
+unit!(GigabytesPerHour, f64);
 
 unit_conversion!(BytesPerSecond f64, KilobytesPerSecond f64, byte_per_second_to_kilobyte_per_second);
 unit_conversion!(BytesPerSecond f64, MegabytesPerSecond f64, byte_per_second_to_megabyte_per_second);
-unit_conversion!(BytesPerSecond f64, GigabytesPerSecond f64, byte_per_second_to_gigabyte_per_hour);
+unit_conversion!(BytesPerSecond f64, GigabytesPerHour f64, byte_per_second_to_gigabyte_per_hour);
 unit_conversion!(KilobytesPerSecond f64, MegabytesPerSecond f64, kilobyte_per_second_to_megabyte_per_second);
-unit_conversion!(KilobytesPerSecond f64, GigabytesPerSecond f64, kilobyte_per_second_to_gigabyte_per_hour);
+unit_conversion!(KilobytesPerSecond f64, GigabytesPerHour f64, kilobyte_per_second_to_gigabyte_per_hour);
 
 pub fn byte_per_second_to_kilobyte_per_second(byte_per_second: f64) -> f64 {
     byte_per_second / 1000.0

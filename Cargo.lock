@@ -1290,6 +1290,7 @@ dependencies = [
  "serde",
  "serde-protobuf",
  "serde_json",
+ "simba",
  "single_value_channel",
  "thiserror",
  "tracing",

@@ -21,7 +21,6 @@
     unreachable_pub,
     unused_import_braces,
     unused_lifetimes,
-    unused_qualifications,
     redundant_semicolons
     )]
 

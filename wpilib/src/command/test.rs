@@ -9,14 +9,21 @@ use super::commands::CommandBuilder;
 
 #[test]
 fn test_command() {
-    struct TestCommand {}
-    impl CommandTrait for TestCommand {}
-    unsafe impl Send for TestCommand {}
+    fn schedule_test() {
+        struct TestCommand {}
+        impl CommandTrait for TestCommand {}
 
-    let command = TestCommand {};
+        let command = TestCommand {};
 
-    CommandManager::schedule(Command::custom(Box::new(command)));
+        CommandManager::schedule(Command::custom(Box::new(command)));
+    }
 
+    schedule_test();
+
+    std::thread::spawn(|| {
+        schedule_test();
+        CommandManager::run();
+    }).join().unwrap();
 }
 
 static UUID: u8 = 0;

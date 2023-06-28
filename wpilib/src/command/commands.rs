@@ -87,47 +87,128 @@ impl CommandBuilder {
 
 impl CommandBuilder {
     pub fn start_only(init: impl FnMut() + 'static, requirements: Vec<u8>) -> Command {
-        CommandBuilder::new().init(init).with_requirements(requirements).build()
+        CommandBuilder::new()
+            .init(init)
+            .with_requirements(requirements)
+            .build()
     }
 
     pub fn run_only(periodic: impl FnMut() + 'static, requirements: Vec<u8>) -> Command {
-        CommandBuilder::new().periodic(periodic).with_requirements(requirements).build()
+        CommandBuilder::new()
+            .periodic(periodic)
+            .with_requirements(requirements)
+            .build()
     }
 
     pub fn end_only(end: impl FnMut(bool) + 'static, requirements: Vec<u8>) -> Command {
-        CommandBuilder::new().end(end).with_requirements(requirements).build()
+        CommandBuilder::new()
+            .end(end)
+            .with_requirements(requirements)
+            .build()
     }
 
-    pub fn run_start(init: impl FnMut() + 'static, periodic: impl FnMut() + 'static, requirements: Vec<u8>) -> Command {
-        CommandBuilder::new().init(init).periodic(periodic).with_requirements(requirements).build()
+    pub fn run_start(
+        init: impl FnMut() + 'static,
+        periodic: impl FnMut() + 'static,
+        requirements: Vec<u8>,
+    ) -> Command {
+        CommandBuilder::new()
+            .init(init)
+            .periodic(periodic)
+            .with_requirements(requirements)
+            .build()
     }
 
-    pub fn run_end(periodic: impl FnMut() + 'static, end: impl FnMut(bool) + 'static, requirements: Vec<u8>) -> Command {
-        CommandBuilder::new().periodic(periodic).end(end).with_requirements(requirements).build()
+    pub fn run_end(
+        periodic: impl FnMut() + 'static,
+        end: impl FnMut(bool) + 'static,
+        requirements: Vec<u8>,
+    ) -> Command {
+        CommandBuilder::new()
+            .periodic(periodic)
+            .end(end)
+            .with_requirements(requirements)
+            .build()
     }
 
-    pub fn start_end(init: impl FnMut() + 'static, end: impl FnMut(bool) + 'static, requirements: Vec<u8>) -> Command {
-        CommandBuilder::new().init(init).end(end).with_requirements(requirements).build()
+    pub fn start_end(
+        init: impl FnMut() + 'static,
+        end: impl FnMut(bool) + 'static,
+        requirements: Vec<u8>,
+    ) -> Command {
+        CommandBuilder::new()
+            .init(init)
+            .end(end)
+            .with_requirements(requirements)
+            .build()
     }
 
-    pub fn run_start_end(init: impl FnMut() + 'static, periodic: impl FnMut() + 'static, end: impl FnMut(bool) + 'static, requirements: Vec<u8>) -> Command {
-        CommandBuilder::new().init(init).periodic(periodic).end(end).with_requirements(requirements).build()
+    pub fn run_start_end(
+        init: impl FnMut() + 'static,
+        periodic: impl FnMut() + 'static,
+        end: impl FnMut(bool) + 'static,
+        requirements: Vec<u8>,
+    ) -> Command {
+        CommandBuilder::new()
+            .init(init)
+            .periodic(periodic)
+            .end(end)
+            .with_requirements(requirements)
+            .build()
     }
 
-    pub fn run_until(is_finished: impl FnMut() -> bool + 'static, periodic: impl FnMut() + 'static, requirements: Vec<u8>) -> Command {
-        CommandBuilder::new().is_finished(is_finished).periodic(periodic).with_requirements(requirements).build()
+    pub fn run_until(
+        is_finished: impl FnMut() -> bool + 'static,
+        periodic: impl FnMut() + 'static,
+        requirements: Vec<u8>,
+    ) -> Command {
+        CommandBuilder::new()
+            .is_finished(is_finished)
+            .periodic(periodic)
+            .with_requirements(requirements)
+            .build()
     }
 
-    pub fn run_end_until(is_finished: impl FnMut() -> bool + 'static, periodic: impl FnMut() + 'static, end: impl FnMut(bool) + 'static, requirements: Vec<u8>) -> Command {
-        CommandBuilder::new().is_finished(is_finished).periodic(periodic).end(end).with_requirements(requirements).build()
+    pub fn run_end_until(
+        is_finished: impl FnMut() -> bool + 'static,
+        periodic: impl FnMut() + 'static,
+        end: impl FnMut(bool) + 'static,
+        requirements: Vec<u8>,
+    ) -> Command {
+        CommandBuilder::new()
+            .is_finished(is_finished)
+            .periodic(periodic)
+            .end(end)
+            .with_requirements(requirements)
+            .build()
     }
 
-    pub fn start_run_until(init: impl FnMut() + 'static, is_finished: impl FnMut() -> bool + 'static, requirements: Vec<u8>) -> Command {
-        CommandBuilder::new().init(init).is_finished(is_finished).with_requirements(requirements).build()
+    pub fn start_run_until(
+        init: impl FnMut() + 'static,
+        is_finished: impl FnMut() -> bool + 'static,
+        requirements: Vec<u8>,
+    ) -> Command {
+        CommandBuilder::new()
+            .init(init)
+            .is_finished(is_finished)
+            .with_requirements(requirements)
+            .build()
     }
 
-    pub fn all(init: impl FnMut() + 'static, periodic: impl FnMut() + 'static, end: impl FnMut(bool) + 'static, is_finished: impl FnMut() -> bool + 'static, requirements: Vec<u8>) -> Command {
-        CommandBuilder::new().init(init).periodic(periodic).end(end).is_finished(is_finished).with_requirements(requirements).build()
+    pub fn all(
+        init: impl FnMut() + 'static,
+        periodic: impl FnMut() + 'static,
+        end: impl FnMut(bool) + 'static,
+        is_finished: impl FnMut() -> bool + 'static,
+        requirements: Vec<u8>,
+    ) -> Command {
+        CommandBuilder::new()
+            .init(init)
+            .periodic(periodic)
+            .end(end)
+            .is_finished(is_finished)
+            .with_requirements(requirements)
+            .build()
     }
 }
 
@@ -169,8 +250,7 @@ impl CommandTrait for SimpleBuiltCommand {
         self.requirements.clone()
     }
 }
-unsafe impl Send for SimpleBuiltCommand {}
-
+// unsafe impl Send for SimpleBuiltCommand {}
 
 pub struct ParallelBuiltCommand {
     commands: Vec<Command>,
@@ -221,10 +301,14 @@ impl CommandTrait for ParallelBuiltCommand {
     }
 
     fn get_name(&self) -> String {
-        self.commands.iter().map(|command| command.get_name()).collect::<Vec<_>>().join(",")
+        self.commands
+            .iter()
+            .map(|command| command.get_name())
+            .collect::<Vec<_>>()
+            .join(",")
     }
 }
-unsafe impl Send for ParallelBuiltCommand {}
+// unsafe impl Send for ParallelBuiltCommand {}
 
 pub struct SequentialCommand {
     commands: Vec<Command>,
@@ -249,7 +333,8 @@ impl CommandTrait for SequentialCommand {
 
     fn end(&mut self, interrupted: bool) {
         if interrupted {
-            self.commands.get_mut(self.current)
+            self.commands
+                .get_mut(self.current)
                 .map(|command| command.end(true));
         }
     }
@@ -263,10 +348,14 @@ impl CommandTrait for SequentialCommand {
     }
 
     fn get_name(&self) -> String {
-        self.commands.iter().map(|command| command.get_name()).collect::<Vec<_>>().join("->")
+        self.commands
+            .iter()
+            .map(|command| command.get_name())
+            .collect::<Vec<_>>()
+            .join("->")
     }
 }
-unsafe impl Send for SequentialCommand {}
+// unsafe impl Send for SequentialCommand {}
 
 pub struct ProxyCommand {
     command_supplier: Box<dyn FnMut() -> Command>,
@@ -301,6 +390,7 @@ impl CommandTrait for ProxyCommand {
     }
 }
 
+#[allow(missing_copy_implementations)]
 pub struct WaitCommand {
     start_instant: Option<std::time::Instant>,
     duration: std::time::Duration,
@@ -356,7 +446,6 @@ impl CommandTrait for NamedCommand {
         self.name.clone()
     }
 }
-
 
 pub enum Command {
     Parallel(ParallelBuiltCommand),
@@ -440,95 +529,115 @@ impl CommandTrait for Command {
         }
     }
 }
+#[allow(unsafe_code)]
 unsafe impl Send for Command {}
 impl Command {
     pub fn along_with(self, other: Command) -> Command {
-        Command::Parallel(
-            ParallelBuiltCommand{
-                requirements: self.get_requirements().into_iter().chain(other.get_requirements().into_iter()).collect(),
-                commands: vec![self, other],
-                finished: vec![false, false],
-                race: false,
-            })
+        Command::Parallel(ParallelBuiltCommand {
+            requirements: self
+                .get_requirements()
+                .into_iter()
+                .chain(other.get_requirements().into_iter())
+                .collect(),
+            commands: vec![self, other],
+            finished: vec![false, false],
+            race: false,
+        })
     }
 
     pub fn along_with_many(self, others: Vec<Command>) -> Command {
         let mut commands = vec![self];
         commands.extend(others);
-        Command::Parallel(
-            ParallelBuiltCommand{
-                finished: vec![false; commands.len()],
-                requirements: commands.iter().map(|command| command.get_requirements()).flatten().collect(),
-                commands,
-                race: false,
-            })
+        Command::Parallel(ParallelBuiltCommand {
+            finished: vec![false; commands.len()],
+            requirements: commands
+                .iter()
+                .map(|command| command.get_requirements())
+                .flatten()
+                .collect(),
+            commands,
+            race: false,
+        })
     }
 
     pub fn race_with(self, other: Command) -> Command {
-        Command::Parallel(
-            ParallelBuiltCommand{
-                requirements: self.get_requirements().into_iter().chain(other.get_requirements().into_iter()).collect(),
-                commands: vec![self, other],
-                finished: vec![false, false],
-                race: true,
-            })
+        Command::Parallel(ParallelBuiltCommand {
+            requirements: self
+                .get_requirements()
+                .into_iter()
+                .chain(other.get_requirements().into_iter())
+                .collect(),
+            commands: vec![self, other],
+            finished: vec![false, false],
+            race: true,
+        })
     }
 
     pub fn race_with_many(self, others: Vec<Command>) -> Command {
         let mut commands = vec![self];
         commands.extend(others);
-        Command::Parallel(
-            ParallelBuiltCommand{
-                finished: vec![false; commands.len()],
-                requirements: commands.iter().map(|command| command.get_requirements()).flatten().collect(),
-                commands,
-                race: true,
-            })
+        Command::Parallel(ParallelBuiltCommand {
+            finished: vec![false; commands.len()],
+            requirements: commands
+                .iter()
+                .map(|command| command.get_requirements())
+                .flatten()
+                .collect(),
+            commands,
+            race: true,
+        })
     }
 
     pub fn before(self, other: Command) -> Command {
-        Command::Sequential(
-            SequentialCommand{
-                requirements: self.get_requirements().into_iter().chain(other.get_requirements().into_iter()).collect(),
-                commands: vec![self, other],
-                current: 0,
-            })
+        Command::Sequential(SequentialCommand {
+            requirements: self
+                .get_requirements()
+                .into_iter()
+                .chain(other.get_requirements().into_iter())
+                .collect(),
+            commands: vec![self, other],
+            current: 0,
+        })
     }
 
     pub fn after(self, other: Command) -> Command {
-        Command::Sequential(
-            SequentialCommand{
-                requirements: self.get_requirements().into_iter().chain(other.get_requirements().into_iter()).collect(),
-                commands: vec![other, self],
-                current: 0,
-            })
+        Command::Sequential(SequentialCommand {
+            requirements: self
+                .get_requirements()
+                .into_iter()
+                .chain(other.get_requirements().into_iter())
+                .collect(),
+            commands: vec![other, self],
+            current: 0,
+        })
     }
 
-    pub fn and_then_many(self, others: Vec<Command>) -> Command{
+    pub fn and_then_many(self, others: Vec<Command>) -> Command {
         let mut commands = vec![self];
         commands.extend(others);
-        Command::Sequential(
-            SequentialCommand{
-                requirements: commands.iter().map(|command| command.get_requirements()).flatten().collect(),
-                commands,
-                current: 0,
-            })
+        Command::Sequential(SequentialCommand {
+            requirements: commands
+                .iter()
+                .map(|command| command.get_requirements())
+                .flatten()
+                .collect(),
+            commands,
+            current: 0,
+        })
     }
 
     pub fn with_name(self, name: &str) -> Command {
-        Command::Named(
-            NamedCommand{
-                name: String::from(name),
-                command: Box::new(self),
-            })
+        Command::Named(NamedCommand {
+            name: String::from(name),
+            command: Box::new(self),
+        })
     }
 
     pub fn wait_for(self, seconds: f64) -> Command {
-        Command::Wait(
-            WaitCommand{
-                duration: std::time::Duration::from_secs_f64(seconds),
-                start_instant: None,
-            })
+        Command::Wait(WaitCommand {
+            duration: std::time::Duration::from_secs_f64(seconds),
+            start_instant: None,
+        })
     }
 
     pub fn custom(command: Box<dyn CommandTrait + Send>) -> Command {

@@ -3,7 +3,6 @@
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
-use syn::ImplItemFn;
 
 #[proc_macro_attribute]
 pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream {

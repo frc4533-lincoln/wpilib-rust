@@ -12,7 +12,7 @@ type SubsystemUUID = u8;
 
 
 pub struct CommandManager {
-    periodic_callbacks: Vec<Box<dyn Fn() + Send>>,
+    periodic_callbacks: Vec<Box<dyn Fn() + Send + Sync>>,
     commands: Vec<Option<Command>>,
     default_commands: HashMap<SubsystemUUID, CommandIndex>,
     requirements: HashMap<SubsystemUUID, CommandIndex>,

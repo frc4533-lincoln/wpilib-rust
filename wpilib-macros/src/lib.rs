@@ -255,7 +255,7 @@ pub fn unit(input: TokenStream) -> TokenStream {
     //create a new struct with the given name and type
     let struct_item = quote! {
         pub struct #struct_name {
-            pub value: #r#type,
+            value: #r#type,
         }
     };
 
@@ -277,6 +277,17 @@ pub fn unit(input: TokenStream) -> TokenStream {
         impl std::fmt::Display for #struct_name {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 write!(f, "{}({})", stringify!(#struct_name), self.value)
+            }
+        }
+        impl #struct_name {
+            pub fn new(value: #r#type) -> Self {
+                Self { value }
+            }
+            pub fn value(&self) -> #r#type {
+                self.value
+            }
+            pub fn set(&mut self, value: #r#type) {
+                self.value = value;
             }
         }
     };
@@ -346,6 +357,23 @@ pub fn unit(input: TokenStream) -> TokenStream {
         impl std::ops::RemAssign for #struct_name {
             fn rem_assign(&mut self, rhs: Self) {
                 self.value %= rhs.value;
+            }
+        }
+        impl #struct_name {
+            pub fn square(&self) -> Self {
+                Self {
+                    value: self.value * self.value,
+                }
+            }
+            pub fn cube(&self) -> Self {
+                Self {
+                    value: self.value * self.value * self.value,
+                }
+            }
+            pub fn map(&self, f: impl FnOnce(#r#type) -> #r#type) -> Self {
+                Self {
+                    value: f(self.value),
+                }
             }
         }
     };
@@ -443,15 +471,6 @@ pub fn unit(input: TokenStream) -> TokenStream {
         }
     };
 
-    //implement new func for the struct
-    let impl_new_block = quote! {
-        impl #struct_name {
-            pub fn new(value: #r#type) -> Self {
-                Self { value }
-            }
-        }
-    };
-
     //implement partial eq and partial ord for the struct
     let impl_partial_eq_block = quote! {
         impl std::cmp::PartialEq for #struct_name {
@@ -468,7 +487,6 @@ pub fn unit(input: TokenStream) -> TokenStream {
 
 
     output.extend(struct_item);
-    output.extend(impl_new_block);
     output.extend(impl_basic_block);
     output.extend(impl_math_block);
     output.extend(impl_into_from_block);

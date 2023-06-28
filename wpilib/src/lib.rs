@@ -41,4 +41,5 @@ pub enum EventTypes {
     End,
 }
 
+#[no_panic::no_panic]
 pub fn wpilib_main(_robot: Box<dyn UserRobot>) {}

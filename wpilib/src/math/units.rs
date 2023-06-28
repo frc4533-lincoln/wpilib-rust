@@ -1,13 +1,13 @@
 
 
 wpilib_macros::unit!(Meter, f64);
-wpilib_macros::unit!(Feet, f32);
+wpilib_macros::unit!(Feet, f64);
 
 
-wpilib_macros::unit_conversion!(Meter f64, Feet f32, meter_to_feet);
+wpilib_macros::unit_conversion!(Meter f64, Feet f64, meter_to_feet);
 
-pub fn meter_to_feet(meter: f64) -> f32 {
-    meter as f32 * 3.28084
+pub fn meter_to_feet(meter: f64) -> f64 {
+    meter * 3.28084
 }
 
 

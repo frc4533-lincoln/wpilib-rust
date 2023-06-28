@@ -1,9 +1,6 @@
 
 
 pub trait Subsystem {
-    fn get_name(&self) -> String;
-
-    fn get_uuid(&self) -> u8;
 
     fn periodic(&mut self) {}
 

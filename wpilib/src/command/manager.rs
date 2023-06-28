@@ -35,10 +35,10 @@ impl CommandManager {
         }
     }
 
-    pub fn register_subsystem(uuid: u8, periodic_callback: fn(), default_command: Command) {
+    pub fn register_subsystem(uuid: u8, periodic_callback: fn(), default_command: Option<Command>) {
         let mut scheduler = MANAGER.lock();
         scheduler.periodic_callbacks.push(Box::new(periodic_callback));
-        let cmd_idx = scheduler.add_command(default_command);
+        let cmd_idx = scheduler.add_command(default_command.unwrap_or_default());
         scheduler.default_commands.insert(uuid, cmd_idx);
     }
 
@@ -168,5 +168,16 @@ impl ConditionalScheduler {
 
     pub fn add_cond(&mut self, cond: fn() -> bool, cmd: fn() -> Command) {
         self.conds.push((cond, cmd));
+    }
+}
+
+#[macro_export]
+macro_rules! register_subsystem {
+    ($name:ident) => {
+        CommandManager::register_subsystem(
+            $name::uuid(),
+            || $name::get_static().periodic(),
+            $name::get_static().get_default_command(),
+        );
     }
 }

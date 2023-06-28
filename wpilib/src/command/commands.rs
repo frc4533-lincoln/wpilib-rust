@@ -529,7 +529,6 @@ impl CommandTrait for Command {
         }
     }
 }
-#[allow(unsafe_code)]
 unsafe impl Send for Command {}
 impl Command {
     pub fn along_with(self, other: Command) -> Command {
@@ -646,5 +645,10 @@ impl Command {
 
     pub fn empty() -> Command {
         CommandBuilder::start_only(|| {}, vec![])
+    }
+}
+impl Default for Command {
+    fn default() -> Self {
+        Command::empty()
     }
 }

@@ -26,7 +26,14 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
     let mut other_funcs = Vec::new();
     for item in implementation.items {
         if let syn::ImplItem::Fn(method) = item {
-            if method.attrs.iter().any(|attr| attr.path().is_ident("new")) {
+            let mut attrs = method.attrs.iter().clone();
+            if attrs.len() > 1 {
+                panic!("expected only one attribute per function");
+            }
+            if attrs.clone().any(|attr| attr.path().is_ident("ignore")) {
+                continue;
+            }
+            if attrs.any(|attr| attr.path().is_ident("new")) {
                 if new_func.is_some() {
                     panic!("expected only one function decorated with `#[new]`");
                 }
@@ -104,15 +111,21 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
     output_stream.into()
 }
 
-#[proc_macro_attribute]
-pub fn subsystem_struct(_attr: TokenStream, input: TokenStream) -> TokenStream {
-    input
-}
 
+/// Automatically sets up some boilerplate needed for static subsystems.
+/// Expects Subsystem name and UUID(u8) as arguments.
+/// Example: subsystem!(TestSubsystem, 1u8)
 #[proc_macro]
 pub fn subsystem(input: TokenStream) -> TokenStream {
-    //get an ident from the token stream
-    let struct_name = syn::parse_macro_input!(input as syn::Ident);
+    //get an ident and a literal int from the token stream
+    //filter out puncts and commas
+    let mut iter = TokenStream2::from(input).into_iter().filter(
+        |token| !matches!(token, proc_macro2::TokenTree::Punct(_) | proc_macro2::TokenTree::Group(_)),
+    );
+    let struct_name = syn::parse2::<syn::Ident>(iter.next().expect("could not find first ident").into())
+        .expect("could not parse first ident as an ident");
+    let literal = syn::parse2::<syn::LitInt>(iter.next().expect("could not find second literal").into())
+        .expect("could not parse second literal as an int");
 
     //get the struct name in caps as an identifier
     let struct_name_caps = syn::Ident::new(
@@ -125,6 +138,7 @@ pub fn subsystem(input: TokenStream) -> TokenStream {
     // create a static variable for the struct
     let static_variable = quote! {
         static #struct_name_caps: once_cell::sync::Lazy<parking_lot::Mutex<#struct_name>> = once_cell::sync::Lazy::new(|| parking_lot::Mutex::new(#struct_name::__new()));
+        static UUID: u8 = #literal;
     };
     output.extend(static_variable);
 
@@ -134,6 +148,12 @@ pub fn subsystem(input: TokenStream) -> TokenStream {
             pub fn get_static() -> parking_lot::MutexGuard<'static, #struct_name> {
                 let mut this = #struct_name_caps.lock();
                 this
+            }
+            pub fn uuid() -> u8 {
+                UUID as u8
+            }
+            pub fn name() -> &'static str {
+                stringify!(#struct_name)
             }
         }
     );

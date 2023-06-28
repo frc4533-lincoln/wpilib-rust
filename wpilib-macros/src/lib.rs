@@ -357,9 +357,74 @@ pub fn unit(input: TokenStream) -> TokenStream {
                 self.value
             }
         }
-        impl From<#r#type> for #struct_name {
-            fn from(value: #r#type) -> Self {
-                Self { value }
+        impl From<f64> for #struct_name {
+            fn from(value: f64) -> Self {
+                Self {
+                    value: value as #r#type,
+                }
+            }
+        }
+        impl From<f32> for #struct_name {
+            fn from(value: f32) -> Self {
+                Self {
+                    value: value as #r#type,
+                }
+            }
+        }
+        impl From<u64> for #struct_name {
+            fn from(value: u64) -> Self {
+                Self {
+                    value: value as #r#type,
+                }
+            }
+        }
+        impl From<u32> for #struct_name {
+            fn from(value: u32) -> Self {
+                Self {
+                    value: value as #r#type,
+                }
+            }
+        }
+        impl From<u16> for #struct_name {
+            fn from(value: u16) -> Self {
+                Self {
+                    value: value as #r#type,
+                }
+            }
+        }
+        impl From<u8> for #struct_name {
+            fn from(value: u8) -> Self {
+                Self {
+                    value: value as #r#type,
+                }
+            }
+        }
+        impl From<i64> for #struct_name {
+            fn from(value: i64) -> Self {
+                Self {
+                    value: value as #r#type,
+                }
+            }
+        }
+        impl From<i32> for #struct_name {
+            fn from(value: i32) -> Self {
+                Self {
+                    value: value as #r#type,
+                }
+            }
+        }
+        impl From<i16> for #struct_name {
+            fn from(value: i16) -> Self {
+                Self {
+                    value: value as #r#type,
+                }
+            }
+        }
+        impl From<i8> for #struct_name {
+            fn from(value: i8) -> Self {
+                Self {
+                    value: value as #r#type,
+                }
             }
         }
     };

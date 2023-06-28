@@ -1,4 +1,5 @@
 
+trait Unit {}
 
 wpilib_macros::unit!(Meter, f64);
 wpilib_macros::unit!(Feet, f64);

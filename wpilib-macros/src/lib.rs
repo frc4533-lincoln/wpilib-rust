@@ -378,12 +378,37 @@ pub fn unit(input: TokenStream) -> TokenStream {
         }
     };
 
+    //implement new func for the struct
+    let impl_new_block = quote! {
+        impl #struct_name {
+            pub fn new(value: #r#type) -> Self {
+                Self { value }
+            }
+        }
+    };
+
+    //implement partial eq and partial ord for the struct
+    let impl_partial_eq_block = quote! {
+        impl std::cmp::PartialEq for #struct_name {
+            fn eq(&self, other: &Self) -> bool {
+                self.value == other.value
+            }
+        }
+        impl std::cmp::PartialOrd for #struct_name {
+            fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+                self.value.partial_cmp(&other.value)
+            }
+        }
+    };
+
 
     output.extend(struct_item);
+    output.extend(impl_new_block);
     output.extend(impl_basic_block);
     output.extend(impl_math_block);
     output.extend(impl_into_from_block);
     output.extend(impl_serde_block);
+    output.extend(impl_partial_eq_block);
 
 
     output.into()
@@ -414,11 +439,11 @@ pub fn unit_conversion(input: TokenStream) -> TokenStream {
     let inv_conv_ident = syn::Ident::new(&format!("inverse_{}", conv_func), proc_macro2::Span::call_site());
 
     //create an inverse conv_func
-    // let inv_conv_func_block = quote! {
-    //     fn #inv_conv_ident(value: #to_inner_type) -> #from_inner_type {
-    //         value * (#to_inner_type::one() / #from_inner_type::one())
-    //     }
-    // };
+    let inv_conv_func_block = quote! {
+        fn #inv_conv_ident(value: #to_inner_type) -> #from_inner_type {
+            (value / #conv_func(#from_inner_type::from(1.0)) as #to_inner_type) as #from_inner_type
+        }
+    };
 
 
     let impl_from_block = quote! {
@@ -427,10 +452,159 @@ pub fn unit_conversion(input: TokenStream) -> TokenStream {
                 #to_name{ value: #conv_func(value.value)}
             }
         }
+        impl From<#to_name> for #from_name {
+            fn from(value: #to_name) -> Self {
+                #from_name{ value: #inv_conv_ident(value.value)}
+            }
+        }
     };
 
+    //add math between the two types
+    let impl_to_op_from_block = quote! {
+        impl std::ops::Add<#to_name> for #from_name {
+            type Output = #from_name;
+            fn add(self, rhs: #to_name) -> Self::Output {
+                self + #from_name::from(rhs)
+            }
+        }
+        impl std::ops::AddAssign<#to_name> for #from_name {
+            fn add_assign(&mut self, rhs: #to_name) {
+                *self += #from_name::from(rhs);
+            }
+        }
+        impl std::ops::Sub<#to_name> for #from_name {
+            type Output = #from_name;
+            fn sub(self, rhs: #to_name) -> Self::Output {
+                self - #from_name::from(rhs)
+            }
+        }
+        impl std::ops::SubAssign<#to_name> for #from_name {
+            fn sub_assign(&mut self, rhs: #to_name) {
+                *self -= #from_name::from(rhs);
+            }
+        }
+        impl std::ops::Mul<#to_name> for #from_name {
+            type Output = #from_name;
+            fn mul(self, rhs: #to_name) -> Self::Output {
+                self * #from_name::from(rhs)
+            }
+        }
+        impl std::ops::MulAssign<#to_name> for #from_name {
+            fn mul_assign(&mut self, rhs: #to_name) {
+                *self *= #from_name::from(rhs);
+            }
+        }
+        impl std::ops::Div<#to_name> for #from_name {
+            type Output = #from_name;
+            fn div(self, rhs: #to_name) -> Self::Output {
+                self / #from_name::from(rhs)
+            }
+        }
+        impl std::ops::DivAssign<#to_name> for #from_name {
+            fn div_assign(&mut self, rhs: #to_name) {
+                *self /= #from_name::from(rhs);
+            }
+        }
+        impl std::ops::Rem<#to_name> for #from_name {
+            type Output = #from_name;
+            fn rem(self, rhs: #to_name) -> Self::Output {
+                self % #from_name::from(rhs)
+            }
+        }
+        impl std::ops::RemAssign<#to_name> for #from_name {
+            fn rem_assign(&mut self, rhs: #to_name) {
+                *self %= #from_name::from(rhs);
+            }
+        }
+    };
+    let impl_from_op_to_block = quote! {
+        impl std::ops::Add<#from_name> for #to_name {
+            type Output = #to_name;
+            fn add(self, rhs: #from_name) -> Self::Output {
+                self + #to_name::from(rhs)
+            }
+        }
+        impl std::ops::AddAssign<#from_name> for #to_name {
+            fn add_assign(&mut self, rhs: #from_name) {
+                *self += #to_name::from(rhs);
+            }
+        }
+        impl std::ops::Sub<#from_name> for #to_name {
+            type Output = #to_name;
+            fn sub(self, rhs: #from_name) -> Self::Output {
+                self - #to_name::from(rhs)
+            }
+        }
+        impl std::ops::SubAssign<#from_name> for #to_name {
+            fn sub_assign(&mut self, rhs: #from_name) {
+                *self -= #to_name::from(rhs);
+            }
+        }
+        impl std::ops::Mul<#from_name> for #to_name {
+            type Output = #to_name;
+            fn mul(self, rhs: #from_name) -> Self::Output {
+                self * #to_name::from(rhs)
+            }
+        }
+        impl std::ops::MulAssign<#from_name> for #to_name {
+            fn mul_assign(&mut self, rhs: #from_name) {
+                *self *= #to_name::from(rhs);
+            }
+        }
+        impl std::ops::Div<#from_name> for #to_name {
+            type Output = #to_name;
+            fn div(self, rhs: #from_name) -> Self::Output {
+                self / #to_name::from(rhs)
+            }
+        }
+        impl std::ops::DivAssign<#from_name> for #to_name {
+            fn div_assign(&mut self, rhs: #from_name) {
+                *self /= #to_name::from(rhs);
+            }
+        }
+        impl std::ops::Rem<#from_name> for #to_name {
+            type Output = #to_name;
+            fn rem(self, rhs: #from_name) -> Self::Output {
+                self % #to_name::from(rhs)
+            }
+        }
+        impl std::ops::RemAssign<#from_name> for #to_name {
+            fn rem_assign(&mut self, rhs: #from_name) {
+                *self %= #to_name::from(rhs);
+            }
+        }
+    };
+
+    //implement partial eq and partial ord between the two types
+    let impl_partial_eq_ord_block = quote! {
+        impl std::cmp::PartialEq<#to_name> for #from_name {
+            fn eq(&self, other: &#to_name) -> bool {
+                self.value == #inv_conv_ident(other.value) as #from_inner_type
+            }
+        }
+        impl std::cmp::PartialEq<#from_name> for #to_name {
+            fn eq(&self, other: &#from_name) -> bool {
+                self.value == #conv_func(other.value) as #to_inner_type
+            }
+        }
+        impl std::cmp::PartialOrd<#to_name> for #from_name {
+            fn partial_cmp(&self, other: &#to_name) -> Option<std::cmp::Ordering> {
+                self.value.partial_cmp(&#inv_conv_ident(other.value))
+            }
+        }
+        impl std::cmp::PartialOrd<#from_name> for #to_name {
+            fn partial_cmp(&self, other: &#from_name) -> Option<std::cmp::Ordering> {
+                self.value.partial_cmp(&#conv_func(other.value))
+            }
+        }
+    };
+
+
+    output.extend(inv_conv_func_block);
     output.extend(impl_from_block);
-    // output.extend(impl_math_block);
+    output.extend(impl_to_op_from_block);
+    output.extend(impl_from_op_to_block);
+    output.extend(impl_partial_eq_ord_block);
 
     output.into()
 }

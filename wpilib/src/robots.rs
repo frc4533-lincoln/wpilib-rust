@@ -93,6 +93,7 @@ pub struct RobotCoreImpl {
     user_robot: Box<dyn UserRobot>
 }
 impl RobotCore for RobotCoreImpl {
+    #[no_panic::no_panic]
     fn start(&mut self) {
         self.user_robot.robot_init();
 
@@ -186,6 +187,7 @@ impl RobotCore for RobotCoreImpl {
     }
 }
 
+#[no_panic::no_panic]
 pub fn run_robot(user_robot: Box<dyn UserRobot>) {
     let mut robot = RobotCoreImpl {
         user_robot

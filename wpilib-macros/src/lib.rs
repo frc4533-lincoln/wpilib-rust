@@ -280,12 +280,15 @@ pub fn unit(input: TokenStream) -> TokenStream {
             }
         }
         impl #struct_name {
+            #[inline(always)]
             pub fn new(value: #r#type) -> Self {
                 Self { value }
             }
+            #[inline(always)]
             pub fn value(&self) -> #r#type {
                 self.value
             }
+            #[inline(always)]
             pub fn set(&mut self, value: #r#type) {
                 self.value = value;
             }
@@ -360,20 +363,87 @@ pub fn unit(input: TokenStream) -> TokenStream {
             }
         }
         impl #struct_name {
+            #[inline(always)]
             pub fn square(&self) -> Self {
                 Self {
                     value: self.value * self.value,
                 }
             }
+            #[inline(always)]
             pub fn cube(&self) -> Self {
                 Self {
                     value: self.value * self.value * self.value,
                 }
             }
+            #[inline(always)]
             pub fn map(&self, f: impl FnOnce(#r#type) -> #r#type) -> Self {
                 Self {
                     value: f(self.value),
                 }
+            }
+        }
+    };
+
+    //implement num traits for the struct
+    let impl_num_traits_block = quote! {
+        impl num::Zero for #struct_name {
+            fn zero() -> Self {
+                Self {
+                    value: #r#type::zero(),
+                }
+            }
+            fn is_zero(&self) -> bool {
+                self.value.is_zero()
+            }
+        }
+        impl num::One for #struct_name {
+            fn one() -> Self {
+                Self {
+                    value: #r#type::one(),
+                }
+            }
+            fn is_one(&self) -> bool {
+                self.value.is_one()
+            }
+        }
+        impl num::Num for #struct_name {
+            type FromStrRadixErr = <#r#type as num::Num>::FromStrRadixErr;
+            fn from_str_radix(str: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
+                Ok(Self {
+                    value: #r#type::from_str_radix(str, radix)?,
+                })
+            }
+        }
+        // impl num::NumCast for #struct_name {
+        //     fn from<T: num::ToPrimitive>(n: T) -> Option<Self> {
+        //         Some(Self {
+        //             value: #r#type::from(n)?,
+        //         })
+        //     }
+        // }
+        impl num::ToPrimitive for #struct_name {
+            fn to_i64(&self) -> Option<i64> {
+                self.value.to_i64()
+            }
+            fn to_u64(&self) -> Option<u64> {
+                self.value.to_u64()
+            }
+        }
+        impl num::FromPrimitive for #struct_name {
+            fn from_i64(n: i64) -> Option<Self> {
+                Some(Self {
+                    value: #r#type::from_i64(n)?,
+                })
+            }
+            fn from_u64(n: u64) -> Option<Self> {
+                Some(Self {
+                    value: #r#type::from_u64(n)?,
+                })
+            }
+            fn from_f64(n: f64) -> Option<Self> {
+                Some(Self {
+                    value: #r#type::from_f64(n)?,
+                })
             }
         }
     };
@@ -489,6 +559,7 @@ pub fn unit(input: TokenStream) -> TokenStream {
     output.extend(struct_item);
     output.extend(impl_basic_block);
     output.extend(impl_math_block);
+    output.extend(impl_num_traits_block);
     output.extend(impl_into_from_block);
     output.extend(impl_serde_block);
     output.extend(impl_partial_eq_block);

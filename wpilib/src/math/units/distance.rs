@@ -33,7 +33,7 @@ pub fn centimeter_to_inch(centimeter: f64) -> f64 {
 
 #[cfg(test)]
 mod test {
-    use super::units::distance::*;
+    use super::*;
 
     #[test]
     fn test_meter_to_feet() {

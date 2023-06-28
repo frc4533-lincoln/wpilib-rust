@@ -1,3 +1,7 @@
+use crate::math::units::data_rate::{
+    BytesPerSecond, GigabytesPerHour, KilobytesPerSecond, MegabytesPerSecond,
+};
+use crate::math::units::time::Second;
 use wpilib_macros::{unit, unit_conversion};
 
 unit!(Byte, f64);
@@ -34,4 +38,28 @@ pub fn kilobyte_to_gigabyte(kilobyte: f64) -> f64 {
 
 pub fn megabyte_to_gigabyte(megabyte: f64) -> f64 {
     megabyte / 1000.0
+}
+
+impl Byte {
+    pub fn per_second(self, seconds: Second) -> BytesPerSecond {
+        BytesPerSecond::new(self.value() * seconds.value())
+    }
+}
+
+impl Kilobyte {
+    pub fn per_second(self, seconds: Second) -> KilobytesPerSecond {
+        KilobytesPerSecond::new(self.value() * seconds.value())
+    }
+}
+
+impl Megabyte {
+    pub fn per_second(self, seconds: Second) -> MegabytesPerSecond {
+        MegabytesPerSecond::new(self.value() * seconds.value())
+    }
+}
+
+impl Gigabyte {
+    pub fn per_hour(self, seconds: Second) -> GigabytesPerHour {
+        GigabytesPerHour::new(self.value() * seconds.value() * 3600.0)
+    }
 }

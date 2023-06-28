@@ -42,6 +42,8 @@ impl CommandManager {
         scheduler.default_commands.insert(uuid, cmd_idx);
     }
 
+    /// Will run all periodic callbacks, run all conditional schedulers, init all un-initialized commands, and run all commands
+    /// in that order.
     pub fn run() {
         let mut scheduler = MANAGER.lock();
         scheduler.run_subsystems();
@@ -61,10 +63,12 @@ impl CommandManager {
     }
 
     fn run_cond_schedulers(&mut self) {
-        let conds = self.cond_schedulers.clone();
-        for cond in conds {
+        let mut new_conds = self.cond_schedulers.clone();
+        for cond in &mut new_conds {
             cond.poll(self);
         }
+        //to keep the edits to the schedulers store
+        self.cond_schedulers = new_conds;
     }
 
     fn run_commands(&mut self) {
@@ -140,6 +144,14 @@ impl CommandManager {
         }
     }
 
+    pub fn cancel_all() {
+        let mut scheduler = MANAGER.lock();
+        scheduler.commands.clear();
+        scheduler.requirements.clear();
+        scheduler.initialized_commands.clear();
+        scheduler.orphaned_commands.clear();
+    }
+
     pub fn add_cond_scheduler(scheduler: ConditionalScheduler) {
         let mut manager = MANAGER.lock();
         manager.cond_schedulers.push(scheduler);
@@ -148,25 +160,51 @@ impl CommandManager {
 
 #[derive(Clone)]
 pub struct ConditionalScheduler {
-    conds: Vec<(fn() -> bool, fn() -> Command)>,
+    store: HashMap<String, f32>,
+    conds: Vec<(fn(&mut Self) -> bool, fn() -> Command)>,
 }
 impl ConditionalScheduler {
     pub fn new() -> Self {
         Self {
+            store: HashMap::new(),
             conds: Vec::new(),
         }
     }
 
-    pub fn poll(&self, manager: &mut CommandManager) {
-        for (cond, cmd) in &self.conds {
-            if cond() {
+    pub fn poll(&mut self, manager: &mut CommandManager) {
+        for (cond, cmd) in self.conds.clone() {
+            if cond(self) {
                 let command = cmd();
                 manager.cond_schedule(command);
             }
         }
     }
 
-    pub fn add_cond(&mut self, cond: fn() -> bool, cmd: fn() -> Command) {
+    pub fn store_int(&mut self, name: &str, value: i32) {
+        self.store.insert(name.to_string(), value as f32);
+    }
+
+    pub fn get_int(&self, name: &str) -> Option<i32> {
+        self.store.get(name).map(|x| *x as i32)
+    }
+
+    pub fn store_float(&mut self, name: &str, value: f32) {
+        self.store.insert(name.to_string(), value);
+    }
+
+    pub fn get_float(&self, name: &str) -> Option<f32> {
+        self.store.get(name).map(|x| *x)
+    }
+
+    pub fn store_bool(&mut self, name: &str, value: bool) {
+        self.store.insert(name.to_string(), value as i32 as f32);
+    }
+
+    pub fn get_bool(&self, name: &str) -> Option<bool> {
+        self.store.get(name).map(|x| *x as i32 != 0)
+    }
+
+    pub fn add_cond(&mut self, cond: fn(&mut Self) -> bool, cmd: fn() -> Command) {
         self.conds.push((cond, cmd));
     }
 }

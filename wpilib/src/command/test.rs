@@ -47,17 +47,23 @@ impl TestSubsystem {
         }
     }
 
-    fn is_motor_running(&self) -> bool {
+    pub fn is_motor_running(&self) -> bool {
         self._is_motor_running
     }
 
-    fn cmd_activate_motor(&mut self) -> Command {
+    pub fn cmd_activate_motor(&mut self) -> Command {
+        self.is_motor_running();
         CommandBuilder::start_only(
             || {
                 Self::get_static()._is_motor_running = true;
             },
             vec![Self::uuid()])
             .with_name("Activate Motor")
+    }
+
+    #[allow(dead_code)]
+    fn motor_name() -> String {
+        "test".to_string()
     }
 }
 
@@ -77,7 +83,7 @@ fn test_subsystem() {
 #[test]
 fn test_conditional_scheduler() {
     let mut scheduler = ConditionalScheduler::new();
-    scheduler.add_cond(|| true, || TestSubsystem::cmd_activate_motor());
+    scheduler.add_cond(|_| true, || TestSubsystem::cmd_activate_motor());
 
     CommandManager::add_cond_scheduler(scheduler);
     CommandManager::run();

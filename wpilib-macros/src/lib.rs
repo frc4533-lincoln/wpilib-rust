@@ -21,6 +21,8 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
         struct_name.span(),
     );
 
+    let mut impl_block = Vec::new();
+
     // go through all funcs, if none are decorated with `#[new]` then throw an error
     let mut new_func = None;
     let mut other_funcs = Vec::new();
@@ -39,7 +41,22 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
                 }
                 new_func = Some(method);
             } else {
-                other_funcs.push(method);
+                let mut requires_self = false;
+                for arg in &method.sig.inputs {
+                    if let syn::FnArg::Receiver(_) = arg {
+                        requires_self = true;
+                    }
+                }
+                let is_public;
+                match method.vis {
+                    syn::Visibility::Public(_) => is_public = true,
+                    _ => {is_public = false;}
+                }
+                if requires_self && is_public {
+                    other_funcs.push(method);
+                } else {
+                    impl_block.push(method);
+                }
             }
         }
     };
@@ -54,9 +71,10 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
     new_func.attrs = Vec::new();
 
     //put the __new function in an impl block
-    let mut impl_block = Vec::new();
 
     impl_block.push(new_func);
+
+    let fn_idents: Vec<String> = other_funcs.iter().map(|func| func.sig.ident.to_string()).collect();
 
     //for each func in the impl block, make the non static version private and make a public static version
     for item_fn in &mut other_funcs {
@@ -72,6 +90,65 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
             &format!("__{}", item_fn.sig.ident),
             item_fn.sig.ident.span(),
         );
+
+        //scrape through the block and replace all instances any funcs in fn_idents with their __<name> version
+        let block = item_fn.block.clone();
+        //turn block into a token stream
+        let block_stream = quote!(#block);
+        //check all the idents of the block
+        let mut new_stream = TokenStream2::new();
+        for token in block_stream.into_iter() {
+            //if token is an ident
+            if let proc_macro2::TokenTree::Ident(ident) = token {
+                //if the ident is in fn_idents
+                if fn_idents.contains(&ident.to_string()) {
+                    //replace the ident with __<name>
+                    let new_ident = syn::Ident::new(
+                        &format!("__{}", ident.to_string()),
+                        ident.span(),
+                    );
+                    new_stream.extend(std::iter::once(proc_macro2::TokenTree::Ident(new_ident)));
+                } else {
+                    //if the ident is not in fn_idents, just add it to the new stream
+                    new_stream.extend(std::iter::once(proc_macro2::TokenTree::Ident(ident)));
+                }
+            } else if let proc_macro2::TokenTree::Group(group) = token {
+                //if the token is a group, scrape through the group and replace all instances any funcs in fn_idents with their __<name> version
+                let mut new_group_stream = TokenStream2::new();
+                for group_token in group.stream().into_iter() {
+                    //if token is an ident
+                    if let proc_macro2::TokenTree::Ident(ident) = group_token {
+                        //if the ident is in fn_idents
+                        if fn_idents.contains(&ident.to_string()) {
+                            //replace the ident with __<name>
+                            let new_ident = syn::Ident::new(
+                                &format!("__{}", ident.to_string()),
+                                ident.span(),
+                            );
+                            new_group_stream.extend(std::iter::once(proc_macro2::TokenTree::Ident(new_ident)));
+                        } else {
+                            //if the ident is not in fn_idents, just add it to the new stream
+                            new_group_stream.extend(std::iter::once(proc_macro2::TokenTree::Ident(ident)));
+                        }
+                    } else {
+                        //if the token is not an ident, just add it to the new stream
+                        new_group_stream.extend(std::iter::once(group_token));
+                    }
+                }
+                //turn new group stream back into group
+                let new_group = proc_macro2::Group::new(group.delimiter(), new_group_stream);
+                //add the new group to the new stream
+                new_stream.extend(std::iter::once(proc_macro2::TokenTree::Group(new_group)));
+            } else {
+                //if the token is not an ident, just add it to the new stream
+                new_stream.extend(std::iter::once(token));
+            }
+        }
+        //turn new stream back into block
+        let new_block = syn::parse2::<syn::Block>(new_stream).expect("couldnt scrape block");
+        //replace the block in the function with the new block
+        item_fn.block = new_block;
+
         impl_block.push(item_fn.clone());
 
 
@@ -158,6 +235,202 @@ pub fn subsystem(input: TokenStream) -> TokenStream {
         }
     );
     output.extend(static_getter);
+
+    output.into()
+}
+
+#[proc_macro]
+pub fn unit(input: TokenStream) -> TokenStream {
+    let mut output = TokenStream2::new();
+    //get an ident and a type from the token stream
+    //filter out puncts and commas
+    let mut iter = TokenStream2::from(input).into_iter().filter(
+        |token| !matches!(token, proc_macro2::TokenTree::Punct(_) | proc_macro2::TokenTree::Group(_)),
+    );
+    let struct_name = syn::parse2::<syn::Ident>(iter.next().expect("could not find first ident").into())
+        .expect("could not parse first ident as an ident");
+    let r#type = syn::parse2::<syn::Ident>(iter.next().expect("could not find second type").into())
+        .expect("could not parse second type");
+
+    //create a new struct with the given name and type
+    let struct_item = quote! {
+        pub struct #struct_name {
+            pub value: #r#type,
+        }
+    };
+
+    //impl clone, copy, debug and display for the struct
+    let impl_basic_block = quote! {
+        impl Clone for #struct_name {
+            fn clone(&self) -> Self {
+                Self {
+                    value: self.value.clone(),
+                }
+            }
+        }
+        impl Copy for #struct_name {}
+        impl std::fmt::Debug for #struct_name {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{}({})", stringify!(#struct_name), self.value)
+            }
+        }
+        impl std::fmt::Display for #struct_name {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{}({})", stringify!(#struct_name), self.value)
+            }
+        }
+    };
+
+    //implement math operators for the struct
+    let impl_math_block = quote! {
+        impl std::ops::Add for #struct_name {
+            type Output = Self;
+            fn add(self, rhs: Self) -> Self::Output {
+                Self {
+                    value: self.value + rhs.value,
+                }
+            }
+        }
+        impl std::ops::AddAssign for #struct_name {
+            fn add_assign(&mut self, rhs: Self) {
+                self.value += rhs.value;
+            }
+        }
+        impl std::ops::Sub for #struct_name {
+            type Output = Self;
+            fn sub(self, rhs: Self) -> Self::Output {
+                Self {
+                    value: self.value - rhs.value,
+                }
+            }
+        }
+        impl std::ops::SubAssign for #struct_name {
+            fn sub_assign(&mut self, rhs: Self) {
+                self.value -= rhs.value;
+            }
+        }
+        impl std::ops::Mul for #struct_name {
+            type Output = Self;
+            fn mul(self, rhs: Self) -> Self::Output {
+                Self {
+                    value: self.value * rhs.value,
+                }
+            }
+        }
+        impl std::ops::MulAssign for #struct_name {
+            fn mul_assign(&mut self, rhs: Self) {
+                self.value *= rhs.value;
+            }
+        }
+        impl std::ops::Div for #struct_name {
+            type Output = Self;
+            fn div(self, rhs: Self) -> Self::Output {
+                Self {
+                    value: self.value / rhs.value,
+                }
+            }
+        }
+        impl std::ops::DivAssign for #struct_name {
+            fn div_assign(&mut self, rhs: Self) {
+                self.value /= rhs.value;
+            }
+        }
+        impl std::ops::Rem for #struct_name {
+            type Output = Self;
+            fn rem(self, rhs: Self) -> Self::Output {
+                Self {
+                    value: self.value % rhs.value,
+                }
+            }
+        }
+        impl std::ops::RemAssign for #struct_name {
+            fn rem_assign(&mut self, rhs: Self) {
+                self.value %= rhs.value;
+            }
+        }
+    };
+
+    //implement into and from for its type
+    let impl_into_from_block = quote! {
+        impl Into<#r#type> for #struct_name {
+            fn into(self) -> #r#type {
+                self.value
+            }
+        }
+        impl From<#r#type> for #struct_name {
+            fn from(value: #r#type) -> Self {
+                Self { value }
+            }
+        }
+    };
+
+    //implement serde for the struct
+    let impl_serde_block = quote! {
+        impl serde::Serialize for #struct_name {
+            fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+                self.value.serialize(serializer)
+            }
+        }
+        impl<'de> serde::Deserialize<'de> for #struct_name {
+            fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+                #r#type::deserialize(deserializer).map(|value| Self { value })
+            }
+        }
+    };
+
+
+    output.extend(struct_item);
+    output.extend(impl_basic_block);
+    output.extend(impl_math_block);
+    output.extend(impl_into_from_block);
+    output.extend(impl_serde_block);
+
+
+    output.into()
+}
+
+
+#[proc_macro]
+pub fn unit_conversion(input: TokenStream) -> TokenStream {
+    let mut output = TokenStream2::new();
+
+    // e.g. wpilib_macros::unit_conversion!(Meter f64, Feet f64, meter_to_feet);
+    //this would mean Meter -> Feet
+
+    let mut iter = TokenStream2::from(input).into_iter().filter(
+        |token| !matches!(token, proc_macro2::TokenTree::Punct(_) | proc_macro2::TokenTree::Group(_)),
+    );
+    let from_name = syn::parse2::<syn::Ident>(iter.next().expect("could not find from ident").into())
+        .expect("could not parse from ident as an ident");
+    let from_inner_type = syn::parse2::<syn::Ident>(iter.next().expect("could not find from type ident").into())
+        .expect("could not parse from type ident as an ident");
+    let to_name = syn::parse2::<syn::Ident>(iter.next().expect("could not find to ident").into())
+        .expect("could not parse to ident as an ident");
+    let to_inner_type = syn::parse2::<syn::Ident>(iter.next().expect("could not find to type ident").into())
+        .expect("could not parse to type ident as an ident");
+    let conv_func = syn::parse2::<syn::Ident>(iter.next().expect("could not find third ident").into())
+        .expect("could not parse third ident as an ident");
+
+    let inv_conv_ident = syn::Ident::new(&format!("inverse_{}", conv_func), proc_macro2::Span::call_site());
+
+    //create an inverse conv_func
+    // let inv_conv_func_block = quote! {
+    //     fn #inv_conv_ident(value: #to_inner_type) -> #from_inner_type {
+    //         value * (#to_inner_type::one() / #from_inner_type::one())
+    //     }
+    // };
+
+
+    let impl_from_block = quote! {
+        impl From<#from_name> for #to_name {
+            fn from(value: #from_name) -> Self {
+                #to_name{ value: #conv_func(value.value)}
+            }
+        }
+    };
+
+    output.extend(impl_from_block);
+    // output.extend(impl_math_block);
 
     output.into()
 }

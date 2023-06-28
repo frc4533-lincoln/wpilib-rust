@@ -4,5 +4,4 @@
 members = [
     "wpilib",
     "wpilib-macros",
-    "wpilib-math",
 ]

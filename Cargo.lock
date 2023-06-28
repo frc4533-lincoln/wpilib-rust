@@ -1232,6 +1232,7 @@ name = "wpilib"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "nalgebra",
  "network-tables",
  "once_cell",
  "parking_lot",
@@ -1255,13 +1256,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.22",
-]
-
-[[package]]
-name = "wpilib-math"
-version = "0.1.0"
-dependencies = [
- "nalgebra",
 ]
 
 [[package]]

@@ -1,5 +1,4 @@
-use super::units::Meter;
-
+use super::units::distance::Meter;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Translation2d {

@@ -9,7 +9,8 @@
     clippy::unwrap_in_result,
     clippy::unwrap_used,
     clippy::panicking_unwrap,
-    arithmetic_overflow)]
+    arithmetic_overflow,
+    missing_debug_implementations)]
 #![forbid(
     clippy::missing_safety_doc,
     while_true,

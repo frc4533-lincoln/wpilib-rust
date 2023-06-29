@@ -1,2 +1,2 @@
 pub mod pid;
-mod controller;
+pub mod controller;

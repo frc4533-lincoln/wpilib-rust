@@ -1,4 +1,4 @@
-use std::time::{Instant, Duration};
+use std::{time::{Instant, Duration}, fmt::Debug};
 
 use parking_lot::Mutex;
 
@@ -88,6 +88,7 @@ pub trait UserRobot: Send + Sync {
     fn sim_init(&mut self) {}
     fn sim_periodic(&mut self) {}
 }
+
 
 pub struct RobotCoreImpl {
     user_robot: Box<dyn UserRobot>
@@ -184,6 +185,12 @@ impl RobotCore for RobotCoreImpl {
 
     fn get_hardware(&self) -> HarwareType {
         HarwareType::Sim
+    }
+}
+impl Debug for RobotCoreImpl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RobotCoreImpl")
+            .finish()
     }
 }
 

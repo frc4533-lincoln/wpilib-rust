@@ -20,7 +20,19 @@ pub struct CommandManager {
     orphaned_commands: HashSet<CommandIndex>,
     cond_schedulers: Vec<ConditionalScheduler>,
 }
-
+impl std::fmt::Debug for CommandManager {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CommandManager")
+            .field("periodic_callbacks", &self.periodic_callbacks.len())
+            .field("commands", &self.commands)
+            .field("default_commands", &self.default_commands)
+            .field("requirements", &self.requirements)
+            .field("initialized_commands", &self.initialized_commands)
+            .field("orphaned_commands", &self.orphaned_commands)
+            .field("cond_schedulers", &self.cond_schedulers)
+            .finish()
+    }
+}
 impl CommandManager {
 
     fn new() -> Self {
@@ -158,7 +170,7 @@ impl CommandManager {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ConditionalScheduler {
     store: HashMap<String, f32>,
     conds: Vec<(fn(&mut Self) -> bool, fn() -> Command)>,

@@ -2,9 +2,13 @@ use std::{time::{Instant, Duration}, fmt::Debug};
 
 use parking_lot::Mutex;
 
-use crate::command::CommandManager;
+use crate::{command::CommandManager, if_sim};
 
 static PERIODIC_TIME: Mutex<f64> = Mutex::new(0.02);
+
+pub fn set_periodic_time(time: f64) {
+    *PERIODIC_TIME.lock() = time;
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RobotMode {
@@ -53,8 +57,6 @@ pub trait RobotCore {
     fn end(&mut self);
 
     fn get_mode(&self) -> RobotMode;
-
-    fn get_hardware(&self) -> HarwareType;
 }
 
 pub trait UserRobot: Send + Sync {
@@ -98,7 +100,7 @@ impl RobotCore for RobotCoreImpl {
     fn start(&mut self) {
         self.user_robot.robot_init();
 
-        if self.get_hardware() == HarwareType::Sim {
+        if_sim! {
             self.user_robot.sim_init();
         }
 
@@ -164,7 +166,7 @@ impl RobotCore for RobotCoreImpl {
                 CommandManager::run();
             }
 
-            if self.get_hardware() == HarwareType::Sim {
+            if_sim! {
                 self.user_robot.sim_periodic();
             }
 
@@ -183,9 +185,6 @@ impl RobotCore for RobotCoreImpl {
         RobotMode::Disabled
     }
 
-    fn get_hardware(&self) -> HarwareType {
-        HarwareType::Sim
-    }
 }
 impl Debug for RobotCoreImpl {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

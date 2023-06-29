@@ -4,6 +4,7 @@ pub mod subsystem;
 #[cfg(test)]
 mod test;
 pub mod commands;
+pub mod command_hid;
 
 pub use manager::CommandManager;
 pub use subsystem::Subsystem;

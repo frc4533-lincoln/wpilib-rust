@@ -192,6 +192,10 @@ impl ConditionalScheduler {
         }
     }
 
+    pub fn add_cond(&mut self, cond: fn(&mut Self) -> bool, cmd: fn() -> Command) {
+        self.conds.push((cond, cmd));
+    }
+
     pub fn store_int(&mut self, name: &str, value: i32) {
         self.store.insert(name.to_string(), value as f32);
     }
@@ -214,10 +218,6 @@ impl ConditionalScheduler {
 
     pub fn get_bool(&self, name: &str) -> Option<bool> {
         self.store.get(name).map(|x| *x as i32 != 0)
-    }
-
-    pub fn add_cond(&mut self, cond: fn(&mut Self) -> bool, cmd: fn() -> Command) {
-        self.conds.push((cond, cmd));
     }
 }
 

@@ -33,6 +33,8 @@ use robots::UserRobot;
 pub mod command;
 pub mod math;
 pub mod robots;
+#[macro_use]
+pub mod macros;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EventTypes {

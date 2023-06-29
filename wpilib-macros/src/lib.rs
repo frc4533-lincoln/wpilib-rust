@@ -260,7 +260,7 @@ pub fn unit(input: TokenStream) -> TokenStream {
     let struct_item = quote! {
         #[forbid(non_camel_case_types)]
         pub struct #struct_name {
-            value: #r#type,
+            pub(super) value: #r#type,
         }
     };
 
@@ -311,6 +311,33 @@ pub fn unit(input: TokenStream) -> TokenStream {
                 }
             }
         }
+        impl std::ops::Add<&#struct_name> for #struct_name {
+            type Output = Self;
+            #[inline(always)]
+            fn add(self, rhs: &#struct_name) -> Self::Output {
+                Self {
+                    value: self.value + rhs.value,
+                }
+            }
+        }
+        impl std::ops::Add<#struct_name> for &#struct_name {
+            type Output = #struct_name;
+            #[inline(always)]
+            fn add(self, rhs: #struct_name) -> Self::Output {
+                #struct_name {
+                    value: self.value + rhs.value,
+                }
+            }
+        }
+        impl std::ops::Add<&#struct_name> for &#struct_name {
+            type Output = #struct_name;
+            #[inline(always)]
+            fn add(self, rhs: &#struct_name) -> Self::Output {
+                #struct_name {
+                    value: self.value + rhs.value,
+                }
+            }
+        }
         impl std::ops::AddAssign for #struct_name {
             #[inline(always)]
             fn add_assign(&mut self, rhs: Self) {
@@ -322,6 +349,33 @@ pub fn unit(input: TokenStream) -> TokenStream {
             #[inline(always)]
             fn sub(self, rhs: Self) -> Self::Output {
                 Self {
+                    value: self.value - rhs.value,
+                }
+            }
+        }
+        impl std::ops::Sub<&#struct_name> for #struct_name {
+            type Output = Self;
+            #[inline(always)]
+            fn sub(self, rhs: &#struct_name) -> Self::Output {
+                Self {
+                    value: self.value - rhs.value,
+                }
+            }
+        }
+        impl std::ops::Sub<#struct_name> for &#struct_name {
+            type Output = #struct_name;
+            #[inline(always)]
+            fn sub(self, rhs: #struct_name) -> Self::Output {
+                #struct_name {
+                    value: self.value - rhs.value,
+                }
+            }
+        }
+        impl std::ops::Sub<&#struct_name> for &#struct_name {
+            type Output = #struct_name;
+            #[inline(always)]
+            fn sub(self, rhs: &#struct_name) -> Self::Output {
+                #struct_name {
                     value: self.value - rhs.value,
                 }
             }
@@ -341,6 +395,33 @@ pub fn unit(input: TokenStream) -> TokenStream {
                 }
             }
         }
+        impl std::ops::Mul<&#struct_name> for #struct_name {
+            type Output = Self;
+            #[inline(always)]
+            fn mul(self, rhs: &#struct_name) -> Self::Output {
+                Self {
+                    value: self.value * rhs.value,
+                }
+            }
+        }
+        impl std::ops::Mul<#struct_name> for &#struct_name {
+            type Output = #struct_name;
+            #[inline(always)]
+            fn mul(self, rhs: #struct_name) -> Self::Output {
+                #struct_name {
+                    value: self.value * rhs.value,
+                }
+            }
+        }
+        impl std::ops::Mul<&#struct_name> for &#struct_name {
+            type Output = #struct_name;
+            #[inline(always)]
+            fn mul(self, rhs: &#struct_name) -> Self::Output {
+                #struct_name {
+                    value: self.value * rhs.value,
+                }
+            }
+        }
         impl std::ops::MulAssign for #struct_name {
             #[inline(always)]
             fn mul_assign(&mut self, rhs: Self) {
@@ -356,6 +437,33 @@ pub fn unit(input: TokenStream) -> TokenStream {
                 }
             }
         }
+        impl std::ops::Div<&#struct_name> for #struct_name {
+            type Output = Self;
+            #[inline(always)]
+            fn div(self, rhs: &#struct_name) -> Self::Output {
+                Self {
+                    value: self.value / rhs.value,
+                }
+            }
+        }
+        impl std::ops::Div<#struct_name> for &#struct_name {
+            type Output = #struct_name;
+            #[inline(always)]
+            fn div(self, rhs: #struct_name) -> Self::Output {
+                #struct_name {
+                    value: self.value / rhs.value,
+                }
+            }
+        }
+        impl std::ops::Div<&#struct_name> for &#struct_name {
+            type Output = #struct_name;
+            #[inline(always)]
+            fn div(self, rhs: &#struct_name) -> Self::Output {
+                #struct_name {
+                    value: self.value / rhs.value,
+                }
+            }
+        }
         impl std::ops::DivAssign for #struct_name {
             #[inline(always)]
             fn div_assign(&mut self, rhs: Self) {
@@ -367,6 +475,33 @@ pub fn unit(input: TokenStream) -> TokenStream {
             #[inline(always)]
             fn rem(self, rhs: Self) -> Self::Output {
                 Self {
+                    value: self.value % rhs.value,
+                }
+            }
+        }
+        impl std::ops::Rem<&#struct_name> for #struct_name {
+            type Output = Self;
+            #[inline(always)]
+            fn rem(self, rhs: &#struct_name) -> Self::Output {
+                Self {
+                    value: self.value % rhs.value,
+                }
+            }
+        }
+        impl std::ops::Rem<#struct_name> for &#struct_name {
+            type Output = #struct_name;
+            #[inline(always)]
+            fn rem(self, rhs: #struct_name) -> Self::Output {
+                #struct_name {
+                    value: self.value % rhs.value,
+                }
+            }
+        }
+        impl std::ops::Rem<&#struct_name> for &#struct_name {
+            type Output = #struct_name;
+            #[inline(always)]
+            fn rem(self, rhs: &#struct_name) -> Self::Output {
+                #struct_name {
                     value: self.value % rhs.value,
                 }
             }
@@ -471,11 +606,25 @@ pub fn unit(input: TokenStream) -> TokenStream {
                 value.value
             }
         }
+        impl From<&#struct_name> for #r#type {
+            #[inline(always)]
+            fn from(value: &#struct_name) -> #r#type {
+                value.value
+            }
+        }
         impl From<f64> for #struct_name {
             #[inline(always)]
             fn from(value: f64) -> Self {
                 Self {
                     value: value as #r#type,
+                }
+            }
+        }
+        impl From<&f64> for #struct_name {
+            #[inline(always)]
+            fn from(value: &f64) -> Self {
+                Self {
+                    value: *value as #r#type,
                 }
             }
         }
@@ -487,11 +636,27 @@ pub fn unit(input: TokenStream) -> TokenStream {
                 }
             }
         }
+        impl From<&f32> for #struct_name {
+            #[inline(always)]
+            fn from(value: &f32) -> Self {
+                Self {
+                    value: *value as #r#type,
+                }
+            }
+        }
         impl From<u64> for #struct_name {
             #[inline(always)]
             fn from(value: u64) -> Self {
                 Self {
                     value: value as #r#type,
+                }
+            }
+        }
+        impl From<&u64> for #struct_name {
+            #[inline(always)]
+            fn from(value: &u64) -> Self {
+                Self {
+                    value: *value as #r#type,
                 }
             }
         }
@@ -503,11 +668,27 @@ pub fn unit(input: TokenStream) -> TokenStream {
                 }
             }
         }
+        impl From<&u32> for #struct_name {
+            #[inline(always)]
+            fn from(value: &u32) -> Self {
+                Self {
+                    value: *value as #r#type,
+                }
+            }
+        }
         impl From<u16> for #struct_name {
             #[inline(always)]
             fn from(value: u16) -> Self {
                 Self {
                     value: value as #r#type,
+                }
+            }
+        }
+        impl From<&u16> for #struct_name {
+            #[inline(always)]
+            fn from(value: &u16) -> Self {
+                Self {
+                    value: *value as #r#type,
                 }
             }
         }
@@ -519,11 +700,27 @@ pub fn unit(input: TokenStream) -> TokenStream {
                 }
             }
         }
+        impl From<&u8> for #struct_name {
+            #[inline(always)]
+            fn from(value: &u8) -> Self {
+                Self {
+                    value: *value as #r#type,
+                }
+            }
+        }
         impl From<i64> for #struct_name {
             #[inline(always)]
             fn from(value: i64) -> Self {
                 Self {
                     value: value as #r#type,
+                }
+            }
+        }
+        impl From<&i64> for #struct_name {
+            #[inline(always)]
+            fn from(value: &i64) -> Self {
+                Self {
+                    value: *value as #r#type,
                 }
             }
         }
@@ -535,6 +732,14 @@ pub fn unit(input: TokenStream) -> TokenStream {
                 }
             }
         }
+        impl From<&i32> for #struct_name {
+            #[inline(always)]
+            fn from(value: &i32) -> Self {
+                Self {
+                    value: *value as #r#type,
+                }
+            }
+        }
         impl From<i16> for #struct_name {
             #[inline(always)]
             fn from(value: i16) -> Self {
@@ -543,11 +748,27 @@ pub fn unit(input: TokenStream) -> TokenStream {
                 }
             }
         }
+        impl From<&i16> for #struct_name {
+            #[inline(always)]
+            fn from(value: &i16) -> Self {
+                Self {
+                    value: *value as #r#type,
+                }
+            }
+        }
         impl From<i8> for #struct_name {
             #[inline(always)]
             fn from(value: i8) -> Self {
                 Self {
                     value: value as #r#type,
+                }
+            }
+        }
+        impl From<&i8> for #struct_name {
+            #[inline(always)]
+            fn from(value: &i8) -> Self {
+                Self {
+                    value: *value as #r#type,
                 }
             }
         }
@@ -658,171 +879,171 @@ pub fn unit(input: TokenStream) -> TokenStream {
             #[inline]
             fn is_in_subset(_element: &#struct_name) -> bool {true}
             fn to_superset(&self) -> #struct_name {#struct_name::new(*self)}
-            fn from_superset(element: &#struct_name) -> Option<Self> {Some(element.value)}
-            fn from_superset_unchecked(element: &#struct_name) -> Self {element.value}
+            fn from_superset(element: &#struct_name) -> Option<Self> {Some(element.value as f64)}
+            fn from_superset_unchecked(element: &#struct_name) -> Self {element.value as f64}
         }
         impl nalgebra::ComplexField for #struct_name {
-            type RealField = f64;
+            type RealField = #r#type;
             #[inline]
             fn is_finite(&self) -> bool {self.value.is_finite()}
             #[inline]
             fn try_sqrt(self) -> Option<Self> {Some(#struct_name::new(self.value.sqrt()))}
             #[inline]
             fn abs(self) -> Self::RealField {
-                nalgebra::ComplexField::abs(f64::from(self.value))
+                nalgebra::ComplexField::abs(#r#type::from(self.value))
             }
             #[inline]
             fn acos(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::acos(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::acos(#r#type::from(self.value)))
             }
             #[inline]
             fn acosh(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::acosh(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::acosh(#r#type::from(self.value)))
             }
             #[inline]
             fn asin(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::asin(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::asin(#r#type::from(self.value)))
             }
             #[inline]
             fn asinh(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::asinh(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::asinh(#r#type::from(self.value)))
             }
             #[inline]
             fn atan(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::atan(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::atan(#r#type::from(self.value)))
             }
             #[inline]
             fn atanh(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::atanh(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::atanh(#r#type::from(self.value)))
             }
             #[inline]
             fn cos(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::cos(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::cos(#r#type::from(self.value)))
             }
             #[inline]
             fn cosh(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::cosh(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::cosh(#r#type::from(self.value)))
             }
             #[inline]
             fn exp(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::exp(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::exp(#r#type::from(self.value)))
             }
             #[inline]
             fn ln(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::ln(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::ln(#r#type::from(self.value)))
             }
             #[inline]
-            fn log(self, base: f64) -> Self {
-                #struct_name::new(nalgebra::ComplexField::log(f64::from(self.value), base))
+            fn log(self, base: #r#type) -> Self {
+                #struct_name::new(nalgebra::ComplexField::log(#r#type::from(self.value), base))
             }
             #[inline]
             fn powf(self, n: Self::RealField) -> Self {
-                #struct_name::new(nalgebra::ComplexField::powf(f64::from(self.value), n))
+                #struct_name::new(nalgebra::ComplexField::powf(#r#type::from(self.value), n))
             }
             #[inline]
             fn powi(self, n: i32) -> Self {
-                #struct_name::new(nalgebra::ComplexField::powi(f64::from(self.value), n))
+                #struct_name::new(nalgebra::ComplexField::powi(#r#type::from(self.value), n))
             }
             #[inline]
             fn recip(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::recip(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::recip(#r#type::from(self.value)))
             }
             #[inline]
             fn sin(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::sin(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::sin(#r#type::from(self.value)))
             }
             #[inline]
             fn sinh(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::sinh(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::sinh(#r#type::from(self.value)))
             }
             #[inline]
             fn sqrt(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::sqrt(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::sqrt(#r#type::from(self.value)))
             }
             #[inline]
             fn tan(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::tan(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::tan(#r#type::from(self.value)))
             }
             #[inline]
             fn tanh(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::tanh(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::tanh(#r#type::from(self.value)))
             }
             #[inline]
             fn argument(self) -> Self::RealField {
-                nalgebra::ComplexField::argument(f64::from(self.value))
+                nalgebra::ComplexField::argument(#r#type::from(self.value))
             }
             #[inline]
             fn modulus(self) -> Self::RealField {
-                nalgebra::ComplexField::modulus(f64::from(self.value))
+                nalgebra::ComplexField::modulus(#r#type::from(self.value))
             }
             #[inline]
             fn to_exp(self) -> (Self::RealField, Self) {
-                let (r, theta) = nalgebra::ComplexField::to_exp(f64::from(self.value));
+                let (r, theta) = nalgebra::ComplexField::to_exp(#r#type::from(self.value));
                 (r, #struct_name::new(theta))
             }
             #[inline]
             fn cbrt(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::cbrt(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::cbrt(#r#type::from(self.value)))
             }
             #[inline]
             fn hypot(self, other: Self) -> Self::RealField {
-                nalgebra::ComplexField::hypot(f64::from(self.value), f64::from(other.value))
+                nalgebra::ComplexField::hypot(#r#type::from(self.value), #r#type::from(other.value))
             }
             #[inline]
             fn ceil(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::ceil(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::ceil(#r#type::from(self.value)))
             }
             #[inline]
             fn floor(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::floor(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::floor(#r#type::from(self.value)))
             }
             #[inline]
             fn round(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::round(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::round(#r#type::from(self.value)))
             }
             #[inline]
             fn trunc(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::trunc(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::trunc(#r#type::from(self.value)))
             }
             #[inline]
             fn conjugate(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::conjugate(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::conjugate(#r#type::from(self.value)))
             }
             #[inline]
             fn cosc(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::cosc(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::cosc(#r#type::from(self.value)))
             }
             #[inline]
             fn sinhc(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::sinhc(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::sinhc(#r#type::from(self.value)))
             }
             #[inline]
             fn signum(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::signum(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::signum(#r#type::from(self.value)))
             }
             #[inline]
             fn coshc(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::coshc(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::coshc(#r#type::from(self.value)))
             }
             #[inline]
             fn exp2(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::exp2(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::exp2(#r#type::from(self.value)))
             }
             #[inline]
             fn exp_m1(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::exp_m1(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::exp_m1(#r#type::from(self.value)))
             }
             #[inline]
             fn ln_1p(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::ln_1p(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::ln_1p(#r#type::from(self.value)))
             }
             #[inline]
             fn log10(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::log10(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::log10(#r#type::from(self.value)))
             }
             #[inline]
             fn fract(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::fract(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::fract(#r#type::from(self.value)))
             }
             #[inline]
             fn from_real(re: Self::RealField) -> Self {
@@ -830,55 +1051,55 @@ pub fn unit(input: TokenStream) -> TokenStream {
             }
             #[inline]
             fn imaginary(self) -> Self::RealField {
-                nalgebra::ComplexField::imaginary(f64::from(self.value))
+                nalgebra::ComplexField::imaginary(#r#type::from(self.value))
             }
             #[inline]
             fn log2(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::log2(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::log2(#r#type::from(self.value)))
             }
             #[inline]
             fn modulus_squared(self) -> Self::RealField {
-                nalgebra::ComplexField::modulus_squared(f64::from(self.value))
+                nalgebra::ComplexField::modulus_squared(#r#type::from(self.value))
             }
             #[inline]
             fn mul_add(self,a:Self,b:Self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::mul_add(f64::from(self.value),f64::from(a.value),f64::from(b.value)))
+                #struct_name::new(nalgebra::ComplexField::mul_add(#r#type::from(self.value),#r#type::from(a.value),#r#type::from(b.value)))
             }
             #[inline]
             fn norm1(self) -> Self::RealField {
-                nalgebra::ComplexField::norm1(f64::from(self.value))
+                nalgebra::ComplexField::norm1(#r#type::from(self.value))
             }
             #[inline]
             fn powc(self,n:Self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::powc(f64::from(self.value),f64::from(n.value)))
+                #struct_name::new(nalgebra::ComplexField::powc(#r#type::from(self.value),#r#type::from(n.value)))
             }
             #[inline]
             fn real(self) -> Self::RealField {
-                nalgebra::ComplexField::real(f64::from(self.value))
+                nalgebra::ComplexField::real(#r#type::from(self.value))
             }
             #[inline]
             fn scale(self,factor:Self::RealField) -> Self {
-                #struct_name::new(nalgebra::ComplexField::scale(f64::from(self.value),factor))
+                #struct_name::new(nalgebra::ComplexField::scale(#r#type::from(self.value),factor))
             }
             #[inline]
             fn sin_cos(self) -> (Self,Self) {
-                let (s,c) = nalgebra::ComplexField::sin_cos(f64::from(self.value));
+                let (s,c) = nalgebra::ComplexField::sin_cos(#r#type::from(self.value));
                 (#struct_name::new(s),#struct_name::new(c))
             }
             #[inline]
             fn sinc(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::sinc(f64::from(self.value)))
+                #struct_name::new(nalgebra::ComplexField::sinc(#r#type::from(self.value)))
             }
             fn sinh_cosh(self) -> (Self,Self) {
-                let (s,c) = nalgebra::ComplexField::sinh_cosh(f64::from(self.value));
+                let (s,c) = nalgebra::ComplexField::sinh_cosh(#r#type::from(self.value));
                 (#struct_name::new(s),#struct_name::new(c))
             }
             fn to_polar(self) -> (Self::RealField,Self::RealField) {
-                let (r,theta) = nalgebra::ComplexField::to_polar(f64::from(self.value));
+                let (r,theta) = nalgebra::ComplexField::to_polar(#r#type::from(self.value));
                 (r,theta)
             }
             fn unscale(self,factor:Self::RealField) -> Self {
-                #struct_name::new(nalgebra::ComplexField::unscale(f64::from(self.value),factor))
+                #struct_name::new(nalgebra::ComplexField::unscale(#r#type::from(self.value),factor))
             }
         }
     };
@@ -896,7 +1117,7 @@ pub fn unit(input: TokenStream) -> TokenStream {
     if !type_str.contains("u") {
         output.extend(impl_negative_block);
     }
-    if type_str.contains("f64") {
+    if type_str.contains("f64") || type_str.contains("f32") {
         output.extend(impl_simd_block);
     }
 
@@ -949,8 +1170,18 @@ pub fn unit_conversion(input: TokenStream) -> TokenStream {
                 #to_name{ value: #conv_func(value.value)}
             }
         }
+        impl From<&#from_name> for #to_name {
+            fn from(value: &#from_name) -> Self {
+                #to_name{ value: #conv_func(value.value)}
+            }
+        }
         impl From<#to_name> for #from_name {
             fn from(value: #to_name) -> Self {
+                #from_name{ value: #inv_conv_ident(value.value)}
+            }
+        }
+        impl From<&#to_name> for #from_name {
+            fn from(value: &#to_name) -> Self {
                 #from_name{ value: #inv_conv_ident(value.value)}
             }
         }
@@ -961,6 +1192,24 @@ pub fn unit_conversion(input: TokenStream) -> TokenStream {
         impl std::ops::Add<#to_name> for #from_name {
             type Output = #from_name;
             fn add(self, rhs: #to_name) -> Self::Output {
+                self + #from_name::from(rhs)
+            }
+        }
+        impl std::ops::Add<&#to_name> for #from_name {
+            type Output = #from_name;
+            fn add(self, rhs: &#to_name) -> Self::Output {
+                self + #from_name::from(rhs)
+            }
+        }
+        impl std::ops::Add<#to_name> for &#from_name {
+            type Output = #from_name;
+            fn add(self, rhs: #to_name) -> Self::Output {
+                self + #from_name::from(rhs)
+            }
+        }
+        impl std::ops::Add<&#to_name> for &#from_name {
+            type Output = #from_name;
+            fn add(self, rhs: &#to_name) -> Self::Output {
                 self + #from_name::from(rhs)
             }
         }
@@ -975,6 +1224,24 @@ pub fn unit_conversion(input: TokenStream) -> TokenStream {
                 self - #from_name::from(rhs)
             }
         }
+        impl std::ops::Sub<&#to_name> for #from_name {
+            type Output = #from_name;
+            fn sub(self, rhs: &#to_name) -> Self::Output {
+                self - #from_name::from(rhs)
+            }
+        }
+        impl std::ops::Sub<#to_name> for &#from_name {
+            type Output = #from_name;
+            fn sub(self, rhs: #to_name) -> Self::Output {
+                self - #from_name::from(rhs)
+            }
+        }
+        impl std::ops::Sub<&#to_name> for &#from_name {
+            type Output = #from_name;
+            fn sub(self, rhs: &#to_name) -> Self::Output {
+                self - #from_name::from(rhs)
+            }
+        }
         impl std::ops::SubAssign<#to_name> for #from_name {
             fn sub_assign(&mut self, rhs: #to_name) {
                 *self -= #from_name::from(rhs);
@@ -983,6 +1250,24 @@ pub fn unit_conversion(input: TokenStream) -> TokenStream {
         impl std::ops::Mul<#to_name> for #from_name {
             type Output = #from_name;
             fn mul(self, rhs: #to_name) -> Self::Output {
+                self * #from_name::from(rhs)
+            }
+        }
+        impl std::ops::Mul<&#to_name> for #from_name {
+            type Output = #from_name;
+            fn mul(self, rhs: &#to_name) -> Self::Output {
+                self * #from_name::from(rhs)
+            }
+        }
+        impl std::ops::Mul<#to_name> for &#from_name {
+            type Output = #from_name;
+            fn mul(self, rhs: #to_name) -> Self::Output {
+                self * #from_name::from(rhs)
+            }
+        }
+        impl std::ops::Mul<&#to_name> for &#from_name {
+            type Output = #from_name;
+            fn mul(self, rhs: &#to_name) -> Self::Output {
                 self * #from_name::from(rhs)
             }
         }
@@ -997,6 +1282,24 @@ pub fn unit_conversion(input: TokenStream) -> TokenStream {
                 self / #from_name::from(rhs)
             }
         }
+        impl std::ops::Div<&#to_name> for #from_name {
+            type Output = #from_name;
+            fn div(self, rhs: &#to_name) -> Self::Output {
+                self / #from_name::from(rhs)
+            }
+        }
+        impl std::ops::Div<#to_name> for &#from_name {
+            type Output = #from_name;
+            fn div(self, rhs: #to_name) -> Self::Output {
+                self / #from_name::from(rhs)
+            }
+        }
+        impl std::ops::Div<&#to_name> for &#from_name {
+            type Output = #from_name;
+            fn div(self, rhs: &#to_name) -> Self::Output {
+                self / #from_name::from(rhs)
+            }
+        }
         impl std::ops::DivAssign<#to_name> for #from_name {
             fn div_assign(&mut self, rhs: #to_name) {
                 *self /= #from_name::from(rhs);
@@ -1005,6 +1308,24 @@ pub fn unit_conversion(input: TokenStream) -> TokenStream {
         impl std::ops::Rem<#to_name> for #from_name {
             type Output = #from_name;
             fn rem(self, rhs: #to_name) -> Self::Output {
+                self % #from_name::from(rhs)
+            }
+        }
+        impl std::ops::Rem<&#to_name> for #from_name {
+            type Output = #from_name;
+            fn rem(self, rhs: &#to_name) -> Self::Output {
+                self % #from_name::from(rhs)
+            }
+        }
+        impl std::ops::Rem<#to_name> for &#from_name {
+            type Output = #from_name;
+            fn rem(self, rhs: #to_name) -> Self::Output {
+                self % #from_name::from(rhs)
+            }
+        }
+        impl std::ops::Rem<&#to_name> for &#from_name {
+            type Output = #from_name;
+            fn rem(self, rhs: &#to_name) -> Self::Output {
                 self % #from_name::from(rhs)
             }
         }
@@ -1021,6 +1342,24 @@ pub fn unit_conversion(input: TokenStream) -> TokenStream {
                 self + #to_name::from(rhs)
             }
         }
+        impl std::ops::Add<&#from_name> for #to_name {
+            type Output = #to_name;
+            fn add(self, rhs: &#from_name) -> Self::Output {
+                self + #to_name::from(rhs)
+            }
+        }
+        impl std::ops::Add<#from_name> for &#to_name {
+            type Output = #to_name;
+            fn add(self, rhs: #from_name) -> Self::Output {
+                self + #to_name::from(rhs)
+            }
+        }
+        impl std::ops::Add<&#from_name> for &#to_name {
+            type Output = #to_name;
+            fn add(self, rhs: &#from_name) -> Self::Output {
+                self + #to_name::from(rhs)
+            }
+        }
         impl std::ops::AddAssign<#from_name> for #to_name {
             fn add_assign(&mut self, rhs: #from_name) {
                 *self += #to_name::from(rhs);
@@ -1029,6 +1368,24 @@ pub fn unit_conversion(input: TokenStream) -> TokenStream {
         impl std::ops::Sub<#from_name> for #to_name {
             type Output = #to_name;
             fn sub(self, rhs: #from_name) -> Self::Output {
+                self - #to_name::from(rhs)
+            }
+        }
+        impl std::ops::Sub<&#from_name> for #to_name {
+            type Output = #to_name;
+            fn sub(self, rhs: &#from_name) -> Self::Output {
+                self - #to_name::from(rhs)
+            }
+        }
+        impl std::ops::Sub<#from_name> for &#to_name {
+            type Output = #to_name;
+            fn sub(self, rhs: #from_name) -> Self::Output {
+                self - #to_name::from(rhs)
+            }
+        }
+        impl std::ops::Sub<&#from_name> for &#to_name {
+            type Output = #to_name;
+            fn sub(self, rhs: &#from_name) -> Self::Output {
                 self - #to_name::from(rhs)
             }
         }
@@ -1043,6 +1400,24 @@ pub fn unit_conversion(input: TokenStream) -> TokenStream {
                 self * #to_name::from(rhs)
             }
         }
+        impl std::ops::Mul<&#from_name> for #to_name {
+            type Output = #to_name;
+            fn mul(self, rhs: &#from_name) -> Self::Output {
+                self * #to_name::from(rhs)
+            }
+        }
+        impl std::ops::Mul<#from_name> for &#to_name {
+            type Output = #to_name;
+            fn mul(self, rhs: #from_name) -> Self::Output {
+                self * #to_name::from(rhs)
+            }
+        }
+        impl std::ops::Mul<&#from_name> for &#to_name {
+            type Output = #to_name;
+            fn mul(self, rhs: &#from_name) -> Self::Output {
+                self * #to_name::from(rhs)
+            }
+        }
         impl std::ops::MulAssign<#from_name> for #to_name {
             fn mul_assign(&mut self, rhs: #from_name) {
                 *self *= #to_name::from(rhs);
@@ -1054,6 +1429,24 @@ pub fn unit_conversion(input: TokenStream) -> TokenStream {
                 self / #to_name::from(rhs)
             }
         }
+        impl std::ops::Div<&#from_name> for #to_name {
+            type Output = #to_name;
+            fn div(self, rhs: &#from_name) -> Self::Output {
+                self / #to_name::from(rhs)
+            }
+        }
+        impl std::ops::Div<#from_name> for &#to_name {
+            type Output = #to_name;
+            fn div(self, rhs: #from_name) -> Self::Output {
+                self / #to_name::from(rhs)
+            }
+        }
+        impl std::ops::Div<&#from_name> for &#to_name {
+            type Output = #to_name;
+            fn div(self, rhs: &#from_name) -> Self::Output {
+                self / #to_name::from(rhs)
+            }
+        }
         impl std::ops::DivAssign<#from_name> for #to_name {
             fn div_assign(&mut self, rhs: #from_name) {
                 *self /= #to_name::from(rhs);
@@ -1062,6 +1455,24 @@ pub fn unit_conversion(input: TokenStream) -> TokenStream {
         impl std::ops::Rem<#from_name> for #to_name {
             type Output = #to_name;
             fn rem(self, rhs: #from_name) -> Self::Output {
+                self % #to_name::from(rhs)
+            }
+        }
+        impl std::ops::Rem<&#from_name> for #to_name {
+            type Output = #to_name;
+            fn rem(self, rhs: &#from_name) -> Self::Output {
+                self % #to_name::from(rhs)
+            }
+        }
+        impl std::ops::Rem<#from_name> for &#to_name {
+            type Output = #to_name;
+            fn rem(self, rhs: #from_name) -> Self::Output {
+                self % #to_name::from(rhs)
+            }
+        }
+        impl std::ops::Rem<&#from_name> for &#to_name {
+            type Output = #to_name;
+            fn rem(self, rhs: &#from_name) -> Self::Output {
                 self % #to_name::from(rhs)
             }
         }
@@ -1101,6 +1512,183 @@ pub fn unit_conversion(input: TokenStream) -> TokenStream {
     output.extend(impl_to_op_from_block);
     output.extend(impl_from_op_to_block);
     output.extend(impl_partial_eq_ord_block);
+
+    output.into()
+}
+
+#[proc_macro]
+pub fn unit_dimensional_analysis(input: TokenStream) -> TokenStream {
+    let mut output = TokenStream2::new();
+    //expect (ident operator ident = ident)
+    let input = TokenStream2::from(input);
+    let mut iter = input.into_iter();
+    let a_name = iter.next().unwrap();
+    let operator = iter.next().unwrap();
+    let b_name = iter.next().unwrap();
+    let eq = iter.next().unwrap();
+    let c_name = iter.next().unwrap();
+    let a_name = match a_name {
+        proc_macro2::TokenTree::Ident(ident) => ident,
+        _ => panic!("expected ident"),
+    };
+    let b_name = match b_name {
+        proc_macro2::TokenTree::Ident(ident) => ident,
+        _ => panic!("expected ident"),
+    };
+    let c_name = match c_name {
+        proc_macro2::TokenTree::Ident(ident) => ident,
+        _ => panic!("expected ident"),
+    };
+    let operator = match operator {
+        proc_macro2::TokenTree::Punct(ident) => ident,
+        _ => panic!("expected punct"),
+    };
+    let eq = match eq {
+        proc_macro2::TokenTree::Punct(ident) => ident,
+        _ => panic!("expected punct"),
+    };
+
+    if eq.as_char() != '=' {
+        panic!("expected =");
+    }
+
+    let impl_block;
+
+    match operator.as_char() {
+        '*' => {
+            impl_block = quote! {
+                impl std::ops::Mul<#b_name> for #a_name {
+                    type Output = #c_name;
+                    fn mul(self, rhs: #b_name) -> Self::Output {
+                        #c_name::from(self.value * rhs.value)
+                    }
+                }
+                impl std::ops::Mul<#a_name> for #b_name {
+                    type Output = #c_name;
+                    fn mul(self, rhs: #a_name) -> Self::Output {
+                        #c_name::from(self.value * rhs.value)
+                    }
+                }
+                impl std::ops::Mul<&#b_name> for #a_name {
+                    type Output = #c_name;
+                    fn mul(self, rhs: &#b_name) -> Self::Output {
+                        #c_name::from(self.value * rhs.value)
+                    }
+                }
+                impl std::ops::Mul<#a_name> for &#b_name {
+                    type Output = #c_name;
+                    fn mul(self, rhs: #a_name) -> Self::Output {
+                        #c_name::from(self.value * rhs.value)
+                    }
+                }
+                impl std::ops::Mul<#b_name> for &#a_name {
+                    type Output = #c_name;
+                    fn mul(self, rhs: #b_name) -> Self::Output {
+                        #c_name::from(self.value * rhs.value)
+                    }
+                }
+                impl std::ops::Mul<&#a_name> for #b_name {
+                    type Output = #c_name;
+                    fn mul(self, rhs: &#a_name) -> Self::Output {
+                        #c_name::from(self.value * rhs.value)
+                    }
+                }
+                impl std::ops::Mul<&#b_name> for &#a_name {
+                    type Output = #c_name;
+                    fn mul(self, rhs: &#b_name) -> Self::Output {
+                        #c_name::from(self.value * rhs.value)
+                    }
+                }
+                impl std::ops::Mul<&#a_name> for &#b_name {
+                    type Output = #c_name;
+                    fn mul(self, rhs: &#a_name) -> Self::Output {
+                        #c_name::from(self.value * rhs.value)
+                    }
+                }
+
+                //other order
+                impl std::ops::Div<#a_name> for #c_name {
+                    type Output = #b_name;
+                    fn div(self, rhs: #a_name) -> Self::Output {
+                        #b_name::from(self.value / rhs.value)
+                    }
+                }
+                impl std::ops::Div<#b_name> for #c_name {
+                    type Output = #a_name;
+                    fn div(self, rhs: #b_name) -> Self::Output {
+                        #a_name::from(self.value / rhs.value)
+                    }
+                }
+                impl std::ops::Div<&#a_name> for #c_name {
+                    type Output = #b_name;
+                    fn div(self, rhs: &#a_name) -> Self::Output {
+                        #b_name::from(self.value / rhs.value)
+                    }
+                }
+                impl std::ops::Div<#a_name> for &#c_name {
+                    type Output = #b_name;
+                    fn div(self, rhs: #a_name) -> Self::Output {
+                        #b_name::from(self.value / rhs.value)
+                    }
+                }
+                impl std::ops::Div<&#a_name> for &#c_name {
+                    type Output = #b_name;
+                    fn div(self, rhs: &#a_name) -> Self::Output {
+                        #b_name::from(self.value / rhs.value)
+                    }
+                }
+                impl std::ops::Div<&#b_name> for #c_name {
+                    type Output = #a_name;
+                    fn div(self, rhs: &#b_name) -> Self::Output {
+                        #a_name::from(self.value / rhs.value)
+                    }
+                }
+                impl std::ops::Div<#b_name> for &#c_name {
+                    type Output = #a_name;
+                    fn div(self, rhs: #b_name) -> Self::Output {
+                        #a_name::from(self.value / rhs.value)
+                    }
+                }
+                impl std::ops::Div<&#b_name> for &#c_name {
+                    type Output = #a_name;
+                    fn div(self, rhs: &#b_name) -> Self::Output {
+                        #a_name::from(self.value / rhs.value)
+                    }
+                }
+            };
+        }
+        '/' => {
+            impl_block = quote! {
+                impl std::ops::Div<#b_name> for #a_name {
+                    type Output = #c_name;
+                    fn div(self, rhs: #b_name) -> Self::Output {
+                        #c_name::from(self.value / rhs.value)
+                    }
+                }
+                impl std::ops::Div<&#b_name> for #a_name {
+                    type Output = #c_name;
+                    fn div(self, rhs: &#b_name) -> Self::Output {
+                        #c_name::from(self.value / rhs.value)
+                    }
+                }
+                impl std::ops::Div<#b_name> for &#a_name {
+                    type Output = #c_name;
+                    fn div(self, rhs: #b_name) -> Self::Output {
+                        #c_name::from(self.value / rhs.value)
+                    }
+                }
+                impl std::ops::Div<&#b_name> for &#a_name {
+                    type Output = #c_name;
+                    fn div(self, rhs: &#b_name) -> Self::Output {
+                        #c_name::from(self.value / rhs.value)
+                    }
+                }
+            };
+        }
+        _ => panic!("expected * /"),
+    }
+
+    output.extend(impl_block);
 
     output.into()
 }

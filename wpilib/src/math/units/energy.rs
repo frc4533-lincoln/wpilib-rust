@@ -1,5 +1,5 @@
 use crate::math::units::time::Second;
-use wpilib_macros::{unit, unit_conversion};
+use wpilib_macros::{unit, unit_conversion, unit_dimensional_analysis};
 
 unit!(Joule, f64);
 unit!(Volt, f64);
@@ -14,31 +14,11 @@ pub fn joule_to_watt_hour(joule: f64) -> f64 {
     joule / 3600.0
 }
 
-impl Volt {
-    pub fn to_watt(&self, amp: &Amp) -> Watt {
-        Watt::new(self.value * amp.value)
-    }
-}
+unit_dimensional_analysis!(Volt * Amp = Watt);
 
-impl Amp {
-    pub fn to_watt(&self, volt: &Volt) -> Watt {
-        Watt::new(self.value * volt.value)
-    }
-
-    pub fn to_voltage(&self, watt: &Watt) -> Volt {
-        Volt::new(watt.value / self.value)
-    }
-}
+unit_dimensional_analysis!(Watt * Second = Joule);
 
 impl Watt {
-    pub fn to_voltage(&self, amp: &Amp) -> Volt {
-        Volt::new(self.value / amp.value)
-    }
-
-    pub fn to_amp(&self, volt: &Volt) -> Amp {
-        Amp::new(self.value / volt.value)
-    }
-
     pub fn to_watt_hour(&self, seconds: &Second) -> WattHour {
         WattHour::new(self.value / (3600.0 / seconds.value()))
     }

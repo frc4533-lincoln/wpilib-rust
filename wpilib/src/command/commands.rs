@@ -484,8 +484,14 @@ pub enum Command {
 impl Debug for Command {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            Command::Parallel(command) => f.debug_struct("Parallel").field("command", command).finish(),
-            Command::Sequential(command) => f.debug_struct("Sequential").field("command", command).finish(),
+            Command::Parallel(command) => f
+                .debug_struct("Parallel")
+                .field("command", command)
+                .finish(),
+            Command::Sequential(command) => f
+                .debug_struct("Sequential")
+                .field("command", command)
+                .finish(),
             Command::Simple(command) => f.debug_struct("Simple").field("command", command).finish(),
             Command::Custom(_) => f.debug_struct("Custom").finish(),
             Command::Named(command) => f.debug_struct("Named").field("command", command).finish(),

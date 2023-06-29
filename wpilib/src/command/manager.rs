@@ -3,13 +3,12 @@ use std::collections::{HashMap, HashSet};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 
-use super::{Command, commands::CommandTrait};
+use super::{commands::CommandTrait, Command};
 
 static MANAGER: Mutex<Lazy<CommandManager>> = Mutex::new(Lazy::new(|| CommandManager::new()));
 
 type CommandIndex = usize;
 type SubsystemUUID = u8;
-
 
 pub struct CommandManager {
     periodic_callbacks: Vec<Box<dyn Fn() + Send + Sync>>,
@@ -34,7 +33,6 @@ impl std::fmt::Debug for CommandManager {
     }
 }
 impl CommandManager {
-
     fn new() -> Self {
         Self {
             periodic_callbacks: Vec::new(),
@@ -49,7 +47,9 @@ impl CommandManager {
 
     pub fn register_subsystem(uuid: u8, periodic_callback: fn(), default_command: Option<Command>) {
         let mut scheduler = MANAGER.lock();
-        scheduler.periodic_callbacks.push(Box::new(periodic_callback));
+        scheduler
+            .periodic_callbacks
+            .push(Box::new(periodic_callback));
         let cmd_idx = scheduler.add_command(default_command.unwrap_or_default());
         scheduler.default_commands.insert(uuid, cmd_idx);
     }
@@ -229,5 +229,5 @@ macro_rules! register_subsystem {
             || $name::get_static().periodic(),
             $name::get_static().get_default_command(),
         );
-    }
+    };
 }

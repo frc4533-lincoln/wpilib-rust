@@ -1,9 +1,9 @@
-
 use wpilib_macros::{subsystem, subsystem_methods};
 
 use crate::command::{
-    manager::CommandManager,
-    subsystem::Subsystem, Command, commands::CommandTrait, ConditionalScheduler};
+    commands::CommandTrait, manager::CommandManager, subsystem::Subsystem, Command,
+    ConditionalScheduler,
+};
 
 use super::commands::CommandBuilder;
 
@@ -23,7 +23,9 @@ fn test_command() {
     std::thread::spawn(|| {
         schedule_test();
         CommandManager::run();
-    }).join().unwrap();
+    })
+    .join()
+    .unwrap();
 }
 
 // static UUID: u8 = 0;
@@ -57,8 +59,9 @@ impl TestSubsystem {
             || {
                 Self::get_static()._is_motor_running = true;
             },
-            vec![Self::uuid()])
-            .with_name("Activate Motor")
+            vec![Self::uuid()],
+        )
+        .with_name("Activate Motor")
     }
 
     #[allow(dead_code)]

@@ -1,7 +1,4 @@
-
-
 pub trait Subsystem {
-
     fn periodic(&mut self) {}
 
     fn get_default_command(&self) -> Option<super::Command> {
@@ -14,6 +11,3 @@ pub trait Subsystem {
 
     fn test_end(&mut self) {}
 }
-
-
-

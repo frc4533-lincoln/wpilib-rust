@@ -1,4 +1,4 @@
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
 use parking_lot::Mutex;
 
@@ -17,25 +17,25 @@ impl RobotMode {
     pub fn is_disabled(&self) -> bool {
         match self {
             RobotMode::Disabled => true,
-            _ => false
+            _ => false,
         }
     }
     pub fn is_autonomous(&self) -> bool {
         match self {
             RobotMode::Autonomous => true,
-            _ => false
+            _ => false,
         }
     }
     pub fn is_teleop(&self) -> bool {
         match self {
             RobotMode::Teleop => true,
-            _ => false
+            _ => false,
         }
     }
     pub fn is_test(&self) -> bool {
         match self {
             RobotMode::Test => true,
-            _ => false
+            _ => false,
         }
     }
 }
@@ -83,14 +83,13 @@ pub trait UserRobot: Send + Sync {
     fn robot_test_periodic(&mut self) {}
     fn robot_test_end(&mut self) {}
 
-
     //sim
     fn sim_init(&mut self) {}
     fn sim_periodic(&mut self) {}
 }
 
 pub struct RobotCoreImpl {
-    user_robot: Box<dyn UserRobot>
+    user_robot: Box<dyn UserRobot>,
 }
 impl RobotCore for RobotCoreImpl {
     #[no_panic::no_panic]
@@ -113,46 +112,46 @@ impl RobotCore for RobotCoreImpl {
                 match mode {
                     RobotMode::Disabled => {
                         self.user_robot.robot_disabled_init();
-                    },
+                    }
                     RobotMode::Autonomous => {
                         self.user_robot.robot_autonomous_init();
-                    },
+                    }
                     RobotMode::Teleop => {
                         self.user_robot.robot_teleop_init();
-                    },
+                    }
                     RobotMode::Test => {
                         self.user_robot.robot_test_init();
-                    },
+                    }
                 }
                 match last_mode {
                     RobotMode::Disabled => {
                         self.user_robot.robot_disabled_end();
-                    },
+                    }
                     RobotMode::Autonomous => {
                         self.user_robot.robot_autonomous_end();
-                    },
+                    }
                     RobotMode::Teleop => {
                         self.user_robot.robot_teleop_end();
-                    },
+                    }
                     RobotMode::Test => {
                         self.user_robot.robot_test_end();
-                    },
+                    }
                 }
             }
 
             match mode {
                 RobotMode::Disabled => {
                     self.user_robot.robot_disabled_periodic();
-                },
+                }
                 RobotMode::Autonomous => {
                     self.user_robot.robot_autonomous_periodic();
-                },
+                }
                 RobotMode::Teleop => {
                     self.user_robot.robot_teleop_periodic();
-                },
+                }
                 RobotMode::Test => {
                     self.user_robot.robot_test_periodic();
-                },
+                }
             }
             last_mode = mode;
 
@@ -167,16 +166,14 @@ impl RobotCore for RobotCoreImpl {
                 self.user_robot.sim_periodic();
             }
 
-
             //todo, make this more reliable
-            std::thread::sleep(
-                Duration::from_secs_f64(start.elapsed().as_secs_f64() - *PERIODIC_TIME.lock())
-            );
+            std::thread::sleep(Duration::from_secs_f64(
+                start.elapsed().as_secs_f64() - *PERIODIC_TIME.lock(),
+            ));
         }
     }
 
-    fn end(&mut self) {
-    }
+    fn end(&mut self) {}
 
     fn get_mode(&self) -> RobotMode {
         RobotMode::Disabled
@@ -189,9 +186,7 @@ impl RobotCore for RobotCoreImpl {
 
 #[no_panic::no_panic]
 pub fn run_robot(user_robot: Box<dyn UserRobot>) {
-    let mut robot = RobotCoreImpl {
-        user_robot
-    };
+    let mut robot = RobotCoreImpl { user_robot };
     robot.start();
     tracing::info!("Robot exited");
     robot.end();

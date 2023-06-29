@@ -1,5 +1,3 @@
-
-
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
@@ -50,7 +48,9 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
                 let is_public;
                 match method.vis {
                     syn::Visibility::Public(_) => is_public = true,
-                    _ => {is_public = false;}
+                    _ => {
+                        is_public = false;
+                    }
                 }
                 if requires_self && is_public {
                     other_funcs.push(method);
@@ -59,7 +59,7 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
                 }
             }
         }
-    };
+    }
     if new_func.is_none() {
         panic!("expected a function decorated with `#[new]`");
     };
@@ -74,15 +74,15 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
 
     impl_block.push(new_func);
 
-    let fn_idents: Vec<String> = other_funcs.iter().map(|func| func.sig.ident.to_string()).collect();
+    let fn_idents: Vec<String> = other_funcs
+        .iter()
+        .map(|func| func.sig.ident.to_string())
+        .collect();
 
     //for each func in the impl block, make the non static version private and make a public static version
     for item_fn in &mut other_funcs {
-
-        let static_ident = syn::Ident::new(
-            &format!("{}", item_fn.sig.ident),
-            item_fn.sig.ident.span(),
-        );
+        let static_ident =
+            syn::Ident::new(&format!("{}", item_fn.sig.ident), item_fn.sig.ident.span());
 
         //make the non static version private and rename it to __<name>
         item_fn.vis = syn::Visibility::Inherited;
@@ -103,10 +103,8 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
                 //if the ident is in fn_idents
                 if fn_idents.contains(&ident.to_string()) {
                     //replace the ident with __<name>
-                    let new_ident = syn::Ident::new(
-                        &format!("__{}", ident.to_string()),
-                        ident.span(),
-                    );
+                    let new_ident =
+                        syn::Ident::new(&format!("__{}", ident.to_string()), ident.span());
                     new_stream.extend(std::iter::once(proc_macro2::TokenTree::Ident(new_ident)));
                 } else {
                     //if the ident is not in fn_idents, just add it to the new stream
@@ -121,14 +119,14 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
                         //if the ident is in fn_idents
                         if fn_idents.contains(&ident.to_string()) {
                             //replace the ident with __<name>
-                            let new_ident = syn::Ident::new(
-                                &format!("__{}", ident.to_string()),
-                                ident.span(),
-                            );
-                            new_group_stream.extend(std::iter::once(proc_macro2::TokenTree::Ident(new_ident)));
+                            let new_ident =
+                                syn::Ident::new(&format!("__{}", ident.to_string()), ident.span());
+                            new_group_stream
+                                .extend(std::iter::once(proc_macro2::TokenTree::Ident(new_ident)));
                         } else {
                             //if the ident is not in fn_idents, just add it to the new stream
-                            new_group_stream.extend(std::iter::once(proc_macro2::TokenTree::Ident(ident)));
+                            new_group_stream
+                                .extend(std::iter::once(proc_macro2::TokenTree::Ident(ident)));
                         }
                     } else {
                         //if the token is not an ident, just add it to the new stream
@@ -151,9 +149,7 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
 
         impl_block.push(item_fn.clone());
 
-
-
-        // get all input idents 
+        // get all input idents
         let mut input_idents = Vec::new();
         let mut input_types = Vec::new();
         for arg in &item_fn.sig.inputs {
@@ -175,7 +171,7 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
         };
 
         impl_block.push(static_fn_item);
-    };
+    }
 
     let output_stream = quote! {
         impl #struct_name {
@@ -188,7 +184,6 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
     output_stream.into()
 }
 
-
 /// Automatically sets up some boilerplate needed for static subsystems.
 /// Expects Subsystem name and UUID(u8) as arguments.
 /// Example: subsystem!(TestSubsystem, 1u8)
@@ -196,13 +191,18 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
 pub fn subsystem(input: TokenStream) -> TokenStream {
     //get an ident and a literal int from the token stream
     //filter out puncts and commas
-    let mut iter = TokenStream2::from(input).into_iter().filter(
-        |token| !matches!(token, proc_macro2::TokenTree::Punct(_) | proc_macro2::TokenTree::Group(_)),
-    );
-    let struct_name = syn::parse2::<syn::Ident>(iter.next().expect("could not find first ident").into())
-        .expect("could not parse first ident as an ident");
-    let literal = syn::parse2::<syn::LitInt>(iter.next().expect("could not find second literal").into())
-        .expect("could not parse second literal as an int");
+    let mut iter = TokenStream2::from(input).into_iter().filter(|token| {
+        !matches!(
+            token,
+            proc_macro2::TokenTree::Punct(_) | proc_macro2::TokenTree::Group(_)
+        )
+    });
+    let struct_name =
+        syn::parse2::<syn::Ident>(iter.next().expect("could not find first ident").into())
+            .expect("could not parse first ident as an ident");
+    let literal =
+        syn::parse2::<syn::LitInt>(iter.next().expect("could not find second literal").into())
+            .expect("could not parse second literal as an int");
 
     //get the struct name in caps as an identifier
     let struct_name_caps = syn::Ident::new(
@@ -210,7 +210,7 @@ pub fn subsystem(input: TokenStream) -> TokenStream {
         struct_name.span(),
     );
 
-    let mut output = TokenStream2::new(); 
+    let mut output = TokenStream2::new();
 
     // create a static variable for the struct
     let static_variable = quote! {
@@ -244,11 +244,15 @@ pub fn unit(input: TokenStream) -> TokenStream {
     let mut output = TokenStream2::new();
     //get an ident and a type from the token stream
     //filter out puncts and commas
-    let mut iter = TokenStream2::from(input).into_iter().filter(
-        |token| !matches!(token, proc_macro2::TokenTree::Punct(_) | proc_macro2::TokenTree::Group(_)),
-    );
-    let struct_name = syn::parse2::<syn::Ident>(iter.next().expect("could not find first ident").into())
-        .expect("could not parse first ident as an ident");
+    let mut iter = TokenStream2::from(input).into_iter().filter(|token| {
+        !matches!(
+            token,
+            proc_macro2::TokenTree::Punct(_) | proc_macro2::TokenTree::Group(_)
+        )
+    });
+    let struct_name =
+        syn::parse2::<syn::Ident>(iter.next().expect("could not find first ident").into())
+            .expect("could not parse first ident as an ident");
     let r#type = syn::parse2::<syn::Ident>(iter.next().expect("could not find second type").into())
         .expect("could not parse second type");
 
@@ -899,7 +903,6 @@ pub fn unit(input: TokenStream) -> TokenStream {
     output.into()
 }
 
-
 #[proc_macro]
 pub fn unit_conversion(input: TokenStream) -> TokenStream {
     let mut output = TokenStream2::new();
@@ -907,21 +910,31 @@ pub fn unit_conversion(input: TokenStream) -> TokenStream {
     // e.g. wpilib_macros::unit_conversion!(meter f64, Feet f64, meter_to_feet);
     //this would mean meter -> Feet
 
-    let mut iter = TokenStream2::from(input).into_iter().filter(
-        |token| !matches!(token, proc_macro2::TokenTree::Punct(_) | proc_macro2::TokenTree::Group(_)),
-    );
-    let from_name = syn::parse2::<syn::Ident>(iter.next().expect("could not find from ident").into())
-        .expect("could not parse from ident as an ident");
-    let from_inner_type = syn::parse2::<syn::Ident>(iter.next().expect("could not find from type ident").into())
-        .expect("could not parse from type ident as an ident");
+    let mut iter = TokenStream2::from(input).into_iter().filter(|token| {
+        !matches!(
+            token,
+            proc_macro2::TokenTree::Punct(_) | proc_macro2::TokenTree::Group(_)
+        )
+    });
+    let from_name =
+        syn::parse2::<syn::Ident>(iter.next().expect("could not find from ident").into())
+            .expect("could not parse from ident as an ident");
+    let from_inner_type =
+        syn::parse2::<syn::Ident>(iter.next().expect("could not find from type ident").into())
+            .expect("could not parse from type ident as an ident");
     let to_name = syn::parse2::<syn::Ident>(iter.next().expect("could not find to ident").into())
         .expect("could not parse to ident as an ident");
-    let to_inner_type = syn::parse2::<syn::Ident>(iter.next().expect("could not find to type ident").into())
-        .expect("could not parse to type ident as an ident");
-    let conv_func = syn::parse2::<syn::Ident>(iter.next().expect("could not find third ident").into())
-        .expect("could not parse third ident as an ident");
+    let to_inner_type =
+        syn::parse2::<syn::Ident>(iter.next().expect("could not find to type ident").into())
+            .expect("could not parse to type ident as an ident");
+    let conv_func =
+        syn::parse2::<syn::Ident>(iter.next().expect("could not find third ident").into())
+            .expect("could not parse third ident as an ident");
 
-    let inv_conv_ident = syn::Ident::new(&format!("inverse_{}", conv_func), proc_macro2::Span::call_site());
+    let inv_conv_ident = syn::Ident::new(
+        &format!("inverse_{}", conv_func),
+        proc_macro2::Span::call_site(),
+    );
 
     //create an inverse conv_func
     let inv_conv_func_block = quote! {
@@ -929,7 +942,6 @@ pub fn unit_conversion(input: TokenStream) -> TokenStream {
             (value / #conv_func(#from_inner_type::from(1.0)) as #to_inner_type) as #from_inner_type
         }
     };
-
 
     let impl_from_block = quote! {
         impl From<#from_name> for #to_name {
@@ -1083,7 +1095,6 @@ pub fn unit_conversion(input: TokenStream) -> TokenStream {
             }
         }
     };
-
 
     output.extend(inv_conv_func_block);
     output.extend(impl_from_block);

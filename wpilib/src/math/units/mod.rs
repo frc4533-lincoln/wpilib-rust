@@ -9,3 +9,4 @@ pub mod mass;
 pub mod moment_of_inertia;
 pub mod time;
 pub mod torque;
+pub mod angular_acceleration;

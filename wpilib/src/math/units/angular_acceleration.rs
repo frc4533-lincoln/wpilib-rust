@@ -1,4 +1,4 @@
-use wpilib_macros::{unit, unit_conversion};
+use wpilib_macros::unit;
 
 unit!(DegreePerSecondSquared, f64);
 unit!(RadianPerSecondSquared, f64);

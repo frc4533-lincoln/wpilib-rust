@@ -24,7 +24,7 @@ impl LQRController {
 }
 
 impl Controller for LQRController {
-    fn calculate(&mut self, measurement: f64, period: f64) -> f64 {
+    fn calculate(&mut self, _measurement: f64, _period: f64) -> f64 {
         if !self.enabled {
             return 0.0;
         }

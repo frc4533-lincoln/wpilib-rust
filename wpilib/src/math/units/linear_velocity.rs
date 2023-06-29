@@ -39,7 +39,6 @@ pub fn mile_per_hour_to_kilometer_per_hour(mile_per_hour: f64) -> f64 {
 }
 
 unit_dimensional_analysis!(Meter / Second = MeterPerSecond);
-
 unit_dimensional_analysis!(Feet / Second = FeetPerSecond);
 
 impl MilePerHour {

@@ -11,8 +11,8 @@ pub struct LQRController {
 }
 
 impl LQRController {
-    pub fn new(k: f64, r: f64, q: f64) -> LQRController {
-        LQRController {
+    #[must_use] pub const fn new(k: f64, r: f64, q: f64) -> Self {
+        Self {
             k,
             r,
             q,
@@ -29,7 +29,7 @@ impl Controller for LQRController {
             return 0.0;
         }
         // TODO: Implement LQR controller
-        return 0.0;
+        0.0
     }
 
     fn set_set_point(&mut self, set_point: f64) {

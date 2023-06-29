@@ -1,6 +1,6 @@
 use crate::math::units::distance::{Feet, Meter};
 use crate::math::units::time::Second;
-use wpilib_macros::{unit, unit_conversion};
+use wpilib_macros::{unit, unit_conversion, unit_dimensional_analysis};
 
 unit!(MeterPerSecond, f64);
 unit!(KilometerPerHour, f64);
@@ -38,17 +38,9 @@ pub fn mile_per_hour_to_kilometer_per_hour(mile_per_hour: f64) -> f64 {
     meter_per_second_to_kilometer_per_hour(mile_per_hour / 2.23694)
 }
 
-impl MeterPerSecond {
-    pub fn to_meters(&self, seconds: Second) -> Meter {
-        Meter::new(self.value * seconds.value())
-    }
-}
+unit_dimensional_analysis!(Meter / Second = MeterPerSecond);
 
-impl FeetPerSecond {
-    pub fn to_feet(&self, seconds: Second) -> Feet {
-        Feet::new(self.value * seconds.value())
-    }
-}
+unit_dimensional_analysis!(Feet / Second = FeetPerSecond);
 
 impl MilePerHour {
     pub fn to_feet(&self, seconds: Second) -> Feet {

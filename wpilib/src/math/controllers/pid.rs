@@ -1,5 +1,6 @@
 use crate::math::controllers::controller::Controller;
 
+#[derive(Debug, Clone, Copy)]
 pub struct PIDController {
     pub k_p: f64,
     pub k_i: f64,

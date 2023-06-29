@@ -1,5 +1,6 @@
 #[macro_use]
 pub mod manager;
+pub mod command_hid;
 pub mod commands;
 pub mod subsystem;
 #[cfg(test)]

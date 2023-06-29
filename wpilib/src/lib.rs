@@ -9,7 +9,8 @@
     clippy::unwrap_in_result,
     clippy::unwrap_used,
     clippy::panicking_unwrap,
-    arithmetic_overflow
+    arithmetic_overflow,
+    missing_debug_implementations
 )]
 #![forbid(
     clippy::missing_safety_doc,
@@ -33,6 +34,8 @@ use robots::UserRobot;
 pub mod command;
 pub mod math;
 pub mod robots;
+#[macro_use]
+pub mod macros;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EventTypes {

@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Debug};
 
 pub trait CommandTrait {
     fn init(&mut self) {}
@@ -30,6 +30,7 @@ pub trait CommandTrait {
     }
 }
 
+#[allow(missing_debug_implementations)]
 pub struct CommandBuilder {
     init: Option<Box<dyn FnMut()>>,
     periodic: Option<Box<dyn FnMut()>>,
@@ -250,8 +251,19 @@ impl CommandTrait for SimpleBuiltCommand {
         self.requirements.clone()
     }
 }
-// unsafe impl Send for SimpleBuiltCommand {}
+impl Debug for SimpleBuiltCommand {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.debug_struct("SimpleBuiltCommand")
+            .field("init", &self.init.is_some())
+            .field("periodic", &self.periodic.is_some())
+            .field("end", &self.end.is_some())
+            .field("is_finished", &self.is_finished.is_some())
+            .field("requirements", &self.requirements)
+            .finish()
+    }
+}
 
+#[derive(Debug)]
 pub struct ParallelBuiltCommand {
     commands: Vec<Command>,
     finished: Vec<bool>,
@@ -310,6 +322,7 @@ impl CommandTrait for ParallelBuiltCommand {
 }
 // unsafe impl Send for ParallelBuiltCommand {}
 
+#[derive(Debug)]
 pub struct SequentialCommand {
     commands: Vec<Command>,
     current: usize,
@@ -355,7 +368,6 @@ impl CommandTrait for SequentialCommand {
             .join("->")
     }
 }
-// unsafe impl Send for SequentialCommand {}
 
 pub struct ProxyCommand {
     command_supplier: Box<dyn FnMut() -> Command>,
@@ -389,8 +401,20 @@ impl CommandTrait for ProxyCommand {
         self.command.as_ref().unwrap().get_name()
     }
 }
+impl Debug for ProxyCommand {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        let mut dbg_struct = f.debug_struct("ProxyCommand");
+        if let Some(command) = &self.command {
+            dbg_struct.field("command", command);
+        } else {
+            dbg_struct.field("command", &"None");
+        };
+        dbg_struct.finish()
+    }
+}
 
 #[allow(missing_copy_implementations)]
+#[derive(Debug)]
 pub struct WaitCommand {
     start_instant: Option<std::time::Instant>,
     duration: std::time::Duration,
@@ -417,6 +441,7 @@ impl CommandTrait for WaitCommand {
     }
 }
 
+#[derive(Debug)]
 pub struct NamedCommand {
     name: String,
     command: Box<Command>,
@@ -455,6 +480,25 @@ pub enum Command {
     Named(NamedCommand),
     Wait(WaitCommand),
     Proxy(ProxyCommand),
+}
+impl Debug for Command {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            Command::Parallel(command) => f
+                .debug_struct("Parallel")
+                .field("command", command)
+                .finish(),
+            Command::Sequential(command) => f
+                .debug_struct("Sequential")
+                .field("command", command)
+                .finish(),
+            Command::Simple(command) => f.debug_struct("Simple").field("command", command).finish(),
+            Command::Custom(_) => f.debug_struct("Custom").finish(),
+            Command::Named(command) => f.debug_struct("Named").field("command", command).finish(),
+            Command::Wait(command) => f.debug_struct("Wait").field("command", command).finish(),
+            Command::Proxy(command) => f.debug_struct("Proxy").field("command", command).finish(),
+        }
+    }
 }
 impl CommandTrait for Command {
     fn init(&mut self) {

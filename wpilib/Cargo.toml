@@ -17,7 +17,6 @@ single_value_channel = "1.2.2"
 chrono = "0.4.26"
 thiserror = "1.0.40"
 no-panic = "0.1"
-dyn-clone = "1.0.11"
 
 once_cell = "1.18.0"
 parking_lot = "0.12.1"
@@ -32,6 +31,8 @@ wpilib-macros = { path = "../wpilib-macros", version = "0.1.0" }
 nalgebra = "0.32.2"
 num = "0.4.0"
 simba = "0.8.1"
+
+data-pipeline = "0.1.0"
 
 [lib]
 crate-type = ["cdylib"]

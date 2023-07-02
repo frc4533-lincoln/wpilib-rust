@@ -155,6 +155,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2e66c9d817f1720209181c316d28635c050fa304f9c79e47a520882661b7308"
 
 [[package]]
+name = "data-pipeline"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78cc09a2cf66bf004210f475e920c5c5012bcc6fd66d2a85c28985b011b65ab3"
+dependencies = [
+ "dyn-clone",
+]
+
+[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1286,7 +1295,7 @@ name = "wpilib"
 version = "0.1.0"
 dependencies = [
  "chrono",
- "dyn-clone",
+ "data-pipeline",
  "nalgebra",
  "network-tables",
  "no-panic",

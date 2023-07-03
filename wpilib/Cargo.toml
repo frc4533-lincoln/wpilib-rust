@@ -32,7 +32,7 @@ nalgebra = "0.32.2"
 num = "0.4.0"
 simba = "0.8.1"
 
-data-pipeline = "0.1.0"
+# data-pipeline = "0.1.0"
 
 [lib]
 crate-type = ["cdylib"]

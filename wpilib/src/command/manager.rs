@@ -170,7 +170,7 @@ impl CommandManager {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct ConditionalScheduler {
     store: HashMap<String, f32>,
     conds: Vec<(fn(&mut Self) -> bool, fn() -> Command)>,
@@ -218,6 +218,14 @@ impl ConditionalScheduler {
 
     pub fn get_bool(&self, name: &str) -> Option<bool> {
         self.store.get(name).map(|x| *x as i32 != 0)
+    }
+}
+impl std::fmt::Debug for ConditionalScheduler {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ConditionalScheduler")
+            .field("store", &self.store)
+            .field("conds", &self.conds)
+            .finish()
     }
 }
 

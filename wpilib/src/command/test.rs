@@ -1,11 +1,10 @@
-use std::sync::Arc;
 
 use parking_lot::Mutex;
 use wpilib_macros::{subsystem, subsystem_methods};
 
 use crate::command::{
     commands::CommandTrait, manager::CommandManager, Command,
-    conditions::{OnTrue, WhileTrue},
+    conditions::{self},
     ConditionalScheduler,
 };
 
@@ -170,7 +169,7 @@ fn test_on_true() {
     TestSubsystem::reset();
     let mut scheduler = ConditionalScheduler::new();
     
-    let cond = OnTrue{function: Arc::new(|| true), last_state: false};
+    let cond = conditions::on_true(|| true);
     
     scheduler.add_cond(cond , || TestSubsystem::cmd_activate_motor());
 
@@ -209,7 +208,7 @@ fn test_while_true() {
     let mut scheduler = ConditionalScheduler::new();
     
     
-    let cond = WhileTrue{function: Arc::new(move || {get_state()}), last_state: false};
+    let cond = conditions::while_true(|| get_state());
     
     scheduler.add_cond(cond , || TestSubsystem::cmd_activate_motor());
 

@@ -88,3 +88,23 @@ impl<T> std::fmt::Debug for WhileTrue<T>
         
     }
 }
+
+pub fn on_true<T>(f: T) -> OnTrue<impl Fn() -> bool + Send + Sync + 'static>
+    where T:  Fn() -> bool + Send + Sync + 'static{
+    OnTrue{function: Arc::new(f), last_state: false}
+}
+
+pub fn on_false<T, F>(f: T) -> OnTrue<impl Fn() -> bool + Send + Sync + 'static>
+    where T:  Fn() -> bool + Send + Sync + 'static{
+    OnTrue{function: Arc::new(move || { !f() }), last_state: false}
+}
+
+pub fn while_true<T>(f: T) -> WhileTrue<impl Fn() -> bool + Send + Sync + 'static>
+    where T:  Fn() -> bool + Send + Sync + 'static{
+    WhileTrue{function: Arc::new(f), last_state: false}
+}
+
+pub fn while_false<T>(f: T) -> WhileTrue<impl Fn() -> bool + Send + Sync + 'static>
+    where T:  Fn() -> bool + Send + Sync + 'static{
+    WhileTrue{function: Arc::new(move || { !f() }), last_state: false}
+}

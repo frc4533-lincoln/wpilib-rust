@@ -11,3 +11,7 @@ pub use manager::CommandManager;
 pub use manager::ConditionalScheduler;
 pub use conditions::OnTrue;
 pub use conditions::WhileTrue;
+pub use conditions::on_true;
+pub use conditions::on_false;
+pub use conditions::while_true;
+pub use conditions::while_false;

@@ -353,8 +353,8 @@ pub fn subsystem(input: TokenStream) -> TokenStream {
                 let mut this = #struct_name_caps.lock();
                 this
             }
-            pub fn suid() -> usize {
-                SUID as usize
+            pub fn suid() -> u8 {
+                SUID as u8
             }
             pub fn name() -> &'static str {
                 stringify!(#struct_name)

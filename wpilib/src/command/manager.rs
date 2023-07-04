@@ -7,7 +7,7 @@ use super::{commands::CommandTrait, Command};
 
 static MANAGER: Mutex<Lazy<CommandManager>> = Mutex::new(Lazy::new(CommandManager::new));
 
-type SubsystemSUID = usize;
+type SubsystemSUID = u8;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CommandIndex {
@@ -138,7 +138,8 @@ impl CommandManager {
                 } else {
                     for req in cmd.get_requirements() {
                         self.requirements.remove(&req);
-                        self.requirements.insert(req, CommandIndex::DefaultCommand(req));
+                        let idx = self.subsystem_to_default[&req];
+                        self.requirements.insert(req, idx);
                     }
                 }
             }

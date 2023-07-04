@@ -11,9 +11,9 @@ pub trait CommandTrait {
         false
     }
 
-    // fn add_requirements(&mut self, _subsystems: Vec<usize>) {}
+    // fn add_requirements(&mut self, _subsystems: Vec<u8>) {}
 
-    fn get_requirements(&self) -> Vec<usize> {
+    fn get_requirements(&self) -> Vec<u8> {
         Vec::new()
     }
 
@@ -36,7 +36,7 @@ pub struct CommandBuilder {
     periodic: Option<Box<dyn FnMut()>>,
     end: Option<Box<dyn FnMut(bool)>>,
     is_finished: Option<Box<dyn FnMut() -> bool>>,
-    requirements: Vec<usize>,
+    requirements: Vec<u8>,
 }
 
 impl CommandBuilder {
@@ -70,7 +70,7 @@ impl CommandBuilder {
         self
     }
 
-    pub fn with_requirements(mut self, requirements: Vec<usize>) -> Self {
+    pub fn with_requirements(mut self, requirements: Vec<u8>) -> Self {
         self.requirements = requirements;
         self
     }
@@ -87,21 +87,21 @@ impl CommandBuilder {
 }
 
 impl CommandBuilder {
-    pub fn start_only(init: impl FnMut() + 'static, requirements: Vec<usize>) -> Command {
+    pub fn start_only(init: impl FnMut() + 'static, requirements: Vec<u8>) -> Command {
         CommandBuilder::new()
             .init(init)
             .with_requirements(requirements)
             .build()
     }
 
-    pub fn run_only(periodic: impl FnMut() + 'static, requirements: Vec<usize>) -> Command {
+    pub fn run_only(periodic: impl FnMut() + 'static, requirements: Vec<u8>) -> Command {
         CommandBuilder::new()
             .periodic(periodic)
             .with_requirements(requirements)
             .build()
     }
 
-    pub fn end_only(end: impl FnMut(bool) + 'static, requirements: Vec<usize>) -> Command {
+    pub fn end_only(end: impl FnMut(bool) + 'static, requirements: Vec<u8>) -> Command {
         CommandBuilder::new()
             .end(end)
             .with_requirements(requirements)
@@ -111,7 +111,7 @@ impl CommandBuilder {
     pub fn run_start(
         init: impl FnMut() + 'static,
         periodic: impl FnMut() + 'static,
-        requirements: Vec<usize>,
+        requirements: Vec<u8>,
     ) -> Command {
         CommandBuilder::new()
             .init(init)
@@ -123,7 +123,7 @@ impl CommandBuilder {
     pub fn run_end(
         periodic: impl FnMut() + 'static,
         end: impl FnMut(bool) + 'static,
-        requirements: Vec<usize>,
+        requirements: Vec<u8>,
     ) -> Command {
         CommandBuilder::new()
             .periodic(periodic)
@@ -135,7 +135,7 @@ impl CommandBuilder {
     pub fn start_end(
         init: impl FnMut() + 'static,
         end: impl FnMut(bool) + 'static,
-        requirements: Vec<usize>,
+        requirements: Vec<u8>,
     ) -> Command {
         CommandBuilder::new()
             .init(init)
@@ -148,7 +148,7 @@ impl CommandBuilder {
         init: impl FnMut() + 'static,
         periodic: impl FnMut() + 'static,
         end: impl FnMut(bool) + 'static,
-        requirements: Vec<usize>,
+        requirements: Vec<u8>,
     ) -> Command {
         CommandBuilder::new()
             .init(init)
@@ -161,7 +161,7 @@ impl CommandBuilder {
     pub fn run_until(
         is_finished: impl FnMut() -> bool + 'static,
         periodic: impl FnMut() + 'static,
-        requirements: Vec<usize>,
+        requirements: Vec<u8>,
     ) -> Command {
         CommandBuilder::new()
             .is_finished(is_finished)
@@ -174,7 +174,7 @@ impl CommandBuilder {
         is_finished: impl FnMut() -> bool + 'static,
         periodic: impl FnMut() + 'static,
         end: impl FnMut(bool) + 'static,
-        requirements: Vec<usize>,
+        requirements: Vec<u8>,
     ) -> Command {
         CommandBuilder::new()
             .is_finished(is_finished)
@@ -187,7 +187,7 @@ impl CommandBuilder {
     pub fn start_run_until(
         init: impl FnMut() + 'static,
         is_finished: impl FnMut() -> bool + 'static,
-        requirements: Vec<usize>,
+        requirements: Vec<u8>,
     ) -> Command {
         CommandBuilder::new()
             .init(init)
@@ -201,7 +201,7 @@ impl CommandBuilder {
         periodic: impl FnMut() + 'static,
         end: impl FnMut(bool) + 'static,
         is_finished: impl FnMut() -> bool + 'static,
-        requirements: Vec<usize>,
+        requirements: Vec<u8>,
     ) -> Command {
         CommandBuilder::new()
             .init(init)
@@ -218,7 +218,7 @@ pub struct SimpleBuiltCommand {
     periodic: Option<Box<dyn FnMut()>>,
     end: Option<Box<dyn FnMut(bool)>>,
     is_finished: Option<Box<dyn FnMut() -> bool>>,
-    requirements: Vec<usize>,
+    requirements: Vec<u8>,
 }
 impl CommandTrait for SimpleBuiltCommand {
     fn init(&mut self) {
@@ -247,7 +247,7 @@ impl CommandTrait for SimpleBuiltCommand {
         }
     }
 
-    fn get_requirements(&self) -> Vec<usize> {
+    fn get_requirements(&self) -> Vec<u8> {
         self.requirements.clone()
     }
 }
@@ -267,7 +267,7 @@ impl Debug for SimpleBuiltCommand {
 pub struct ParallelBuiltCommand {
     commands: Vec<Command>,
     finished: Vec<bool>,
-    requirements: HashSet<usize>,
+    requirements: HashSet<u8>,
     race: bool,
 }
 impl CommandTrait for ParallelBuiltCommand {
@@ -308,7 +308,7 @@ impl CommandTrait for ParallelBuiltCommand {
         }
     }
 
-    fn get_requirements(&self) -> Vec<usize> {
+    fn get_requirements(&self) -> Vec<u8> {
         self.requirements.clone().into_iter().collect()
     }
 
@@ -326,7 +326,7 @@ impl CommandTrait for ParallelBuiltCommand {
 pub struct SequentialCommand {
     commands: Vec<Command>,
     current: usize,
-    requirements: HashSet<usize>,
+    requirements: HashSet<u8>,
 }
 impl CommandTrait for SequentialCommand {
     fn init(&mut self) {
@@ -356,7 +356,7 @@ impl CommandTrait for SequentialCommand {
         self.current >= self.commands.len()
     }
 
-    fn get_requirements(&self) -> Vec<usize> {
+    fn get_requirements(&self) -> Vec<u8> {
         self.requirements.clone().into_iter().collect()
     }
 
@@ -393,7 +393,7 @@ impl CommandTrait for ProxyCommand {
         self.command.as_mut().unwrap().is_finished()
     }
 
-    fn get_requirements(&self) -> Vec<usize> {
+    fn get_requirements(&self) -> Vec<u8> {
         self.command.as_ref().unwrap().get_requirements()
     }
 
@@ -432,7 +432,7 @@ impl CommandTrait for WaitCommand {
         self.start_instant.unwrap().elapsed() >= self.duration
     }
 
-    fn get_requirements(&self) -> Vec<usize> {
+    fn get_requirements(&self) -> Vec<u8> {
         vec![]
     }
 
@@ -463,7 +463,7 @@ impl CommandTrait for NamedCommand {
         self.command.is_finished()
     }
 
-    fn get_requirements(&self) -> Vec<usize> {
+    fn get_requirements(&self) -> Vec<u8> {
         self.command.get_requirements()
     }
 
@@ -549,7 +549,7 @@ impl CommandTrait for Command {
         }
     }
 
-    fn get_requirements(&self) -> Vec<usize> {
+    fn get_requirements(&self) -> Vec<u8> {
         match self {
             Command::Parallel(command) => command.get_requirements(),
             Command::Sequential(command) => command.get_requirements(),

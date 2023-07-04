@@ -16,49 +16,59 @@ unit_conversion!(Kilobyte f64, Megabyte f64, kilobyte_to_megabyte);
 unit_conversion!(Kilobyte f64, Gigabyte f64, kilobyte_to_gigabyte);
 unit_conversion!(Megabyte f64, Gigabyte f64, megabyte_to_gigabyte);
 
+#[must_use]
 pub fn byte_to_kilobyte(byte: f64) -> f64 {
     byte / 1000.0
 }
 
+#[must_use]
 pub fn byte_to_megabyte(byte: f64) -> f64 {
     byte / 1_000_000.0
 }
 
+#[must_use]
 pub fn byte_to_gigabyte(byte: f64) -> f64 {
     byte / 1_000_000_000.0
 }
 
+#[must_use]
 pub fn kilobyte_to_megabyte(kilobyte: f64) -> f64 {
     kilobyte / 1000.0
 }
 
+#[must_use]
 pub fn kilobyte_to_gigabyte(kilobyte: f64) -> f64 {
     kilobyte / 1_000_000.0
 }
 
+#[must_use]
 pub fn megabyte_to_gigabyte(megabyte: f64) -> f64 {
     megabyte / 1000.0
 }
 
 impl Byte {
+    #[must_use]
     pub fn per_second(self, seconds: Second) -> BytesPerSecond {
         BytesPerSecond::new(self.value() * seconds.value())
     }
 }
 
 impl Kilobyte {
+    #[must_use]
     pub fn per_second(self, seconds: Second) -> KilobytesPerSecond {
         KilobytesPerSecond::new(self.value() * seconds.value())
     }
 }
 
 impl Megabyte {
+    #[must_use]
     pub fn per_second(self, seconds: Second) -> MegabytesPerSecond {
         MegabytesPerSecond::new(self.value() * seconds.value())
     }
 }
 
 impl Gigabyte {
+    #[must_use]
     pub fn per_hour(self, seconds: Second) -> GigabytesPerHour {
         GigabytesPerHour::new(self.value() * seconds.value() * 3600.0)
     }

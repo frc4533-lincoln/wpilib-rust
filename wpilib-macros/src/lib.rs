@@ -226,8 +226,7 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
                 //if the ident is in fn_idents
                 if fn_idents.contains(&ident.to_string()) {
                     //replace the ident with __<name>
-                    let new_ident =
-                        syn::Ident::new(&format!("__{}", ident.to_string()), ident.span());
+                    let new_ident = syn::Ident::new(&format!("__{}", ident), ident.span());
                     new_stream.extend(std::iter::once(proc_macro2::TokenTree::Ident(new_ident)));
                 } else {
                     //if the ident is not in fn_idents, just add it to the new stream
@@ -242,8 +241,7 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
                         //if the ident is in fn_idents
                         if fn_idents.contains(&ident.to_string()) {
                             //replace the ident with __<name>
-                            let new_ident =
-                                syn::Ident::new(&format!("__{}", ident.to_string()), ident.span());
+                            let new_ident = syn::Ident::new(&format!("__{}", ident), ident.span());
                             new_group_stream
                                 .extend(std::iter::once(proc_macro2::TokenTree::Ident(new_ident)));
                         } else {

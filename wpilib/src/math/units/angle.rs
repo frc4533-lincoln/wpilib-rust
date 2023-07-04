@@ -17,33 +17,40 @@ unit_dimensional_analysis!(RadianPerSecond * Second = Radian);
 unit_dimensional_analysis!(RotationPerSecond * Second = Rotation);
 unit_dimensional_analysis!(RotationPerMinute * Minute = Rotation);
 
+#[must_use]
 pub fn degree_to_radian(degree: f64) -> f64 {
     degree.to_radians()
 }
+#[must_use]
 pub fn degree_to_rotation(degree: f64) -> f64 {
     degree / 360.0
 }
+#[must_use]
 pub fn radian_to_rotation(radian: f64) -> f64 {
     degree_to_rotation(radian.to_degrees())
 }
 
 impl Degree {
+    #[must_use]
     pub fn per_second(self, seconds: Second) -> DegreePerSecond {
         DegreePerSecond::new(self.value() * seconds.value())
     }
 }
 
 impl Radian {
+    #[must_use]
     pub fn per_second(self, seconds: Second) -> RadianPerSecond {
         RadianPerSecond::new(self.value() * seconds.value())
     }
 }
 
 impl Rotation {
+    #[must_use]
     pub fn per_minute(self, minutes: Second) -> RotationPerMinute {
         RotationPerMinute::new(self.value() * minutes.value())
     }
 
+    #[must_use]
     pub fn per_second(self, seconds: Second) -> RotationPerSecond {
         RotationPerSecond::new(self.value() * seconds.value())
     }

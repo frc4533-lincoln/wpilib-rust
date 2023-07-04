@@ -11,7 +11,6 @@ wpilog = { git = "https://github.com/oh-yes-0-fps/wpilog-rs", version = "^0.1", 
 serde_json = "^1"
 serde-protobuf = "^0.8"
 serde = { version = "^1", features = ["derive"] }
-# tokio = { version = "1.28.2", features = ["rt", "sync", "net", "time", "macros", "rt-multi-thread", "parking_lot", "tracing" ] }
 rmpv = "1.0.0"
 single_value_channel = "1.2.2"
 chrono = "0.4.26"
@@ -32,14 +31,14 @@ nalgebra = "0.32.2"
 num = "0.4.0"
 simba = "0.8.1"
 
-# data-pipeline = "0.1.0"
-
 [lib]
 crate-type = ["cdylib"]
 
 [features]
-default = ["command"]
-# tracing_feature = ["tracing", "tracing-subscriber", "tracing-appender"]
+default = ["command", "rio"]
+
 command = []
-multi-thread = []
+
 simulation = []
+rio = []
+linux_box = []

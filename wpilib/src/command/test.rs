@@ -4,7 +4,8 @@ use parking_lot::Mutex;
 use wpilib_macros::{subsystem, subsystem_methods};
 
 use crate::command::{
-    commands::CommandTrait, manager::{CommandManager, OnTrue, WhileTrue}, Command,
+    commands::CommandTrait, manager::CommandManager, Command,
+    conditions::{OnTrue, WhileTrue},
     ConditionalScheduler,
 };
 

@@ -5,7 +5,7 @@ use std::{
 
 use parking_lot::Mutex;
 
-use crate::{command::CommandManager, if_sim};
+use crate::{command::CommandManager, if_sim, if_not_athena};
 
 static PERIODIC_TIME: Mutex<f64> = Mutex::new(0.02);
 
@@ -21,37 +21,25 @@ pub enum RobotMode {
     Test = 3,
 }
 impl RobotMode {
-    pub fn is_disabled(&self) -> bool {
-        match self {
-            RobotMode::Disabled => true,
-            _ => false,
-        }
+    #[must_use] pub const fn is_disabled(&self) -> bool {
+        matches!(self, Self::Disabled)
     }
-    pub fn is_autonomous(&self) -> bool {
-        match self {
-            RobotMode::Autonomous => true,
-            _ => false,
-        }
+    #[must_use] pub const fn is_autonomous(&self) -> bool {
+        matches!(self, Self::Autonomous)
     }
-    pub fn is_teleop(&self) -> bool {
-        match self {
-            RobotMode::Teleop => true,
-            _ => false,
-        }
+    #[must_use] pub const fn is_teleop(&self) -> bool {
+        matches!(self, Self::Teleop)
     }
-    pub fn is_test(&self) -> bool {
-        match self {
-            RobotMode::Test => true,
-            _ => false,
-        }
+    #[must_use] pub const fn is_test(&self) -> bool {
+        matches!(self, Self::Test)
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum HarwareType {
+pub enum HardwareType {
     Sim = 0,
-    Rio1 = 1,
-    Rio2 = 2,
+    Athena = 1,
+    Other = 2,
 }
 
 pub trait RobotCore {
@@ -99,6 +87,10 @@ pub struct RobotCoreImpl {
 impl RobotCore for RobotCoreImpl {
     #[no_panic::no_panic]
     fn start(&mut self) {
+        if_not_athena! {
+            println!("WARNING: Running on non-Athena hardware. This is not officially supported.");
+        }
+
         self.user_robot.robot_init();
 
         if_sim! {

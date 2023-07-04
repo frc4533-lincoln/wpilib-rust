@@ -18,8 +18,8 @@ pub struct PIDController {
 }
 
 impl PIDController {
-    pub fn new(k_p: f64, k_i: f64, k_d: f64) -> PIDController {
-        PIDController {
+    #[must_use] pub const fn new(k_p: f64, k_i: f64, k_d: f64) -> Self {
+        Self {
             k_p,
             k_i,
             k_d,
@@ -55,14 +55,14 @@ impl Controller for PIDController {
         }
         let error = self.set_point - measurement;
         self.total_error += error * period;
-        self.total_error = self.total_error.min(self.i_max).max(self.i_min);
+        self.total_error = self.total_error.clamp(self.i_min, self.i_max);
         let d_error = (error - self.prev_error) / period;
         self.prev_error = error;
         let p = self.k_p * error;
         let i = self.k_i * self.total_error;
         let d = self.k_d * d_error;
         let output = p + i + d;
-        output.min(self.max_output).max(self.min_output)
+        output.clamp(self.min_output, self.max_output)
     }
 
     fn set_set_point(&mut self, set_point: f64) {

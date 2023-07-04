@@ -18,11 +18,11 @@ pub fn byte_per_second_to_kilobyte_per_second(byte_per_second: f64) -> f64 {
 }
 
 pub fn byte_per_second_to_megabyte_per_second(byte_per_second: f64) -> f64 {
-    byte_per_second / 1000_000.0
+    byte_per_second / 1_000_000.0
 }
 
 pub fn byte_per_second_to_gigabyte_per_hour(byte_per_second: f64) -> f64 {
-    byte_per_second * 0.000036
+    byte_per_second * 0.000_036
 }
 
 pub fn kilobyte_per_second_to_megabyte_per_second(kilobyte_per_second: f64) -> f64 {
@@ -30,7 +30,7 @@ pub fn kilobyte_per_second_to_megabyte_per_second(kilobyte_per_second: f64) -> f
 }
 
 pub fn kilobyte_per_second_to_gigabyte_per_hour(kilobyte_per_second: f64) -> f64 {
-    kilobyte_per_second * 3600.0 / 1000_000.0
+    kilobyte_per_second * 3600.0 / 1_000_000.0
 }
 
 pub fn megabyte_per_second_to_gigabyte_per_hour(megabyte_per_second: f64) -> f64 {

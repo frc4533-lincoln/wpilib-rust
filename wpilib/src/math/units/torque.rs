@@ -19,10 +19,10 @@ pub fn newton_meter_to_newton_centimeter(newton_meter: f64) -> f64 {
     newton_meter * 100.0
 }
 pub fn newton_meter_to_kilogram_meter(newton_meter: f64) -> f64 {
-    newton_meter * 0.101972
+    newton_meter * 0.101_972
 }
 pub fn newton_meter_to_foot_pound(newton_meter: f64) -> f64 {
-    newton_meter * 0.737562
+    newton_meter * 0.737_562
 }
 pub fn newton_meter_to_inch_pound(newton_meter: f64) -> f64 {
     newton_meter * 8.85075

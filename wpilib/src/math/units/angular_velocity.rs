@@ -13,7 +13,7 @@ unit_conversion!(RadianPerSecond f64, RotationPerMinute f64, radian_per_second_t
 unit_conversion!(RotationPerSecond f64, RotationPerMinute f64, rotation_per_second_to_rotation_per_minute);
 
 pub fn degree_per_second_to_radian_per_second(degree_per_second: f64) -> f64 {
-    degree_per_second * std::f64::consts::PI / 180.0
+    degree_per_second.to_radians()
 }
 
 pub fn degree_per_second_to_rotation_per_second(degree_per_second: f64) -> f64 {

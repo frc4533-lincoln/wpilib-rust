@@ -1,7 +1,9 @@
+use std::sync::Arc;
+
 use wpilib_macros::{subsystem, subsystem_methods};
 
 use crate::command::{
-    commands::CommandTrait, manager::CommandManager, Command,
+    commands::CommandTrait, manager::{CommandManager, OnTrue}, Command,
     ConditionalScheduler,
 };
 
@@ -30,6 +32,7 @@ fn test_command() {
 
 struct TestSubsystem {
     motor_running: bool,
+    calls: i32,
 }
 
 subsystem!(TestSubsystem);
@@ -40,6 +43,7 @@ impl TestSubsystem {
     fn constructor() -> Self {
         Self {
             motor_running: false,
+            calls: 0
         }
     }
 
@@ -56,13 +60,20 @@ impl TestSubsystem {
         self.motor_running = true;
     }
 
+    pub fn add_call(&mut self){
+        self.calls += 1;
+    }
+
+    pub fn get_calls(&mut self) -> i32{
+        self.calls
+    }
     #[default_command]
     pub fn cmd_activate_motor(&self) -> Command {
         if !self.is_motor_running() {
             CommandBuilder::start_only(
                 || {
-                    println!("cmd_activate_motor");
-                    Self::start_motor()
+                    Self::add_call();
+                    Self::start_motor();
                 },
                 vec![Self::suid()],
             )
@@ -107,9 +118,19 @@ impl Condition for Immediately {
 #[test]
 fn test_conditional_scheduler() {
     let mut scheduler = ConditionalScheduler::new();
-    scheduler.add_cond(Immediately{} , || TestSubsystem::cmd_activate_motor());
+    
+    let cond = OnTrue{function: Arc::new(|| true), last_state: false};
+    
+    scheduler.add_cond(cond , || TestSubsystem::cmd_activate_motor());
+
+    assert!(!TestSubsystem::is_motor_running());
+    assert_eq!(TestSubsystem::get_calls(), 0);
+
 
     CommandManager::add_cond_scheduler(scheduler);
     CommandManager::run();
+    CommandManager::run();
+    CommandManager::run();
     assert!(TestSubsystem::is_motor_running());
+    assert_eq!(TestSubsystem::get_calls(), 1);
 }

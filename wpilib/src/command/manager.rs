@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, HashSet}, ops::Deref};
+use std::{collections::{HashMap, HashSet}, ops::Deref, sync::Arc};
 
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -203,6 +203,45 @@ pub trait Condition: Send {
 impl Clone for Box<dyn Condition>{
     fn clone(&self) -> Self {
         self.deref().clone_boxed()
+    }
+}
+
+#[derive(Clone)]
+pub struct OnTrue<T>
+    where T:  Fn() -> bool + Send + Sync + 'static{
+    pub function: Arc<T>,
+    pub last_state: bool,
+}
+
+impl<T> Condition for OnTrue<T> 
+    where T:  Fn() -> bool + Send + Sync + 'static{
+    fn get_condition(&mut self) -> ConditionResponse {
+        let state = (self.function)();
+        if state == true && self.last_state == false {
+            return ConditionResponse::Start;
+        }
+        self.last_state = state;
+        ConditionResponse::NoChange
+    }
+
+    fn clone_boxed(&self) -> Box<dyn Condition> {
+        Box::new(
+            Self{
+                function: self.function.clone(),
+                last_state: self.last_state.clone()
+            }
+        )
+    }
+
+}
+
+impl<T> std::fmt::Debug for OnTrue<T>
+    where T:  Fn() -> bool + Send + Sync + 'static{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OnTrue")
+            .field("last_state", &self.last_state)
+            .finish()
+        
     }
 }
 

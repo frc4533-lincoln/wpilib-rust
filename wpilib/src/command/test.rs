@@ -5,7 +5,7 @@ use crate::command::{
     ConditionalScheduler,
 };
 
-use super::commands::CommandBuilder;
+use super::{commands::CommandBuilder, manager::{Condition, ConditionResponse}};
 
 #[test]
 fn test_command() {
@@ -61,6 +61,7 @@ impl TestSubsystem {
         if !self.is_motor_running() {
             CommandBuilder::start_only(
                 || {
+                    println!("cmd_activate_motor");
                     Self::start_motor()
                 },
                 vec![Self::suid()],
@@ -91,10 +92,22 @@ fn test_subsystem() {
     assert!(TestSubsystem::is_motor_running());
 }
 
+
+struct Immediately {}
+
+impl Condition for Immediately {
+    fn get_condition(&mut self) -> ConditionResponse {
+        ConditionResponse::Start
+    }
+    fn clone_boxed(&self) -> Box<dyn Condition> {
+        Box::new(Immediately{})
+    }
+}
+
 #[test]
 fn test_conditional_scheduler() {
     let mut scheduler = ConditionalScheduler::new();
-    scheduler.add_cond(|_| true, || TestSubsystem::cmd_activate_motor());
+    scheduler.add_cond(Immediately{} , || TestSubsystem::cmd_activate_motor());
 
     CommandManager::add_cond_scheduler(scheduler);
     CommandManager::run();

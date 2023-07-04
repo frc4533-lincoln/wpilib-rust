@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::{collections::{HashMap, HashSet}, ops::Deref};
 
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -171,11 +171,31 @@ impl CommandManager {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum ConditionResponse {
+    Start,
+    Continue,
+    Stop,
+}
+
+pub trait Condition: Send {
+    fn get_condition(&mut self) -> ConditionResponse;
+    fn clone_boxed(&self) -> Box<dyn Condition>;
+}
+
+impl Clone for Box<dyn Condition>{
+    fn clone(&self) -> Self {
+        self.deref().clone_boxed()
+    }
+}
+
+
 #[derive(Clone)]
 pub struct ConditionalScheduler {
     store: HashMap<String, f32>,
-    conds: Vec<(fn(&mut Self) -> bool, fn() -> Command)>,
+    conds: Vec<(Box<dyn Condition>, fn() -> Command)>,
 }
+
 impl ConditionalScheduler {
     #[must_use]
     pub fn new() -> Self {
@@ -186,16 +206,27 @@ impl ConditionalScheduler {
     }
 
     pub fn poll(&mut self, manager: &mut CommandManager) {
-        for (cond, cmd) in self.conds.clone() {
-            if cond(self) {
-                let command = cmd();
-                manager.cond_schedule(command);
+        
+        for (cond, cmd) in &mut self.conds{
+            let condition_result = cond.get_condition();
+
+            match condition_result{
+                ConditionResponse::Start => {
+                    let command = cmd();
+                    manager.cond_schedule(command);
+                },
+                ConditionResponse::Continue => {
+
+                },
+                ConditionResponse::Stop => {
+
+                }
             }
         }
     }
 
-    pub fn add_cond(&mut self, cond: fn(&mut Self) -> bool, cmd: fn() -> Command) {
-        self.conds.push((cond, cmd));
+    pub fn add_cond(&mut self, cond: impl Condition, cmd: fn() -> Command) {
+        self.conds.push((cond.clone_boxed(), cmd));
     }
 
     pub fn store_int(&mut self, name: &str, value: i32) {
@@ -229,7 +260,6 @@ impl std::fmt::Debug for ConditionalScheduler {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ConditionalScheduler")
             .field("store", &self.store)
-            .field("conds", &self.conds)
             .finish()
     }
 }

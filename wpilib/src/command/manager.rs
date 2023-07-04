@@ -13,6 +13,7 @@ type SubsystemSUID = u8;
 pub struct CommandManager {
     periodic_callbacks: Vec<fn()>,
     commands: Vec<Option<Command>>,
+    interrupt_state: HashMap<CommandIndex, bool>,
     default_commands: HashMap<SubsystemSUID, CommandIndex>,
     requirements: HashMap<SubsystemSUID, CommandIndex>,
     initialized_commands: HashSet<CommandIndex>,
@@ -24,6 +25,7 @@ impl std::fmt::Debug for CommandManager {
         f.debug_struct("CommandManager")
             .field("periodic_callbacks", &self.periodic_callbacks.len())
             .field("commands", &self.commands)
+            .field("interrupt_state", &self.interrupt_state)
             .field("default_commands", &self.default_commands)
             .field("requirements", &self.requirements)
             .field("initialized_commands", &self.initialized_commands)
@@ -37,6 +39,7 @@ impl CommandManager {
         Self {
             periodic_callbacks: Vec::new(),
             commands: Vec::new(),
+            interrupt_state: HashMap::new(),
             default_commands: HashMap::new(),
             requirements: HashMap::new(),
             initialized_commands: HashSet::new(),
@@ -100,6 +103,10 @@ impl CommandManager {
                     command.end(false);
                     to_remove.push(*index);
                 }
+                if self.interrupt_state[index]{
+                    command.end(true);
+                    to_remove.push(*index);
+                }
             }
         }
         for index in to_remove {
@@ -120,17 +127,25 @@ impl CommandManager {
         }
     }
 
-    fn add_command(&mut self, command: Command) -> usize {
+    fn add_command(&mut self, command: Command) -> CommandIndex {
         if let Some(index) = self.commands.iter().position(Option::is_none) {
             self.commands[index] = Some(command);
+            self.interrupt_state.insert(index, false);
             index
         } else {
             self.commands.push(Some(command));
+            self.interrupt_state.insert(self.commands.len() - 1, false);
             self.commands.len() - 1
         }
     }
 
-    pub(super) fn cond_schedule(&mut self, command: Command) {
+    fn interrupt_command(&mut self, idx: CommandIndex) {
+        if self.interrupt_state.contains_key(&idx) {
+            self.interrupt_state.insert(idx, true);
+        }
+    }
+
+    pub(super) fn cond_schedule(&mut self, command: Command) -> CommandIndex{
         let requirements = command.get_requirements();
         let index = self.add_command(command);
         if requirements.is_empty() {
@@ -141,6 +156,7 @@ impl CommandManager {
                 self.requirements.insert(requirement, index);
             }
         }
+        index
     }
 
     pub fn schedule(command: Command) {
@@ -176,6 +192,7 @@ pub enum ConditionResponse {
     Start,
     Continue,
     Stop,
+    NoChange,
 }
 
 pub trait Condition: Send {
@@ -190,9 +207,10 @@ impl Clone for Box<dyn Condition>{
 }
 
 
+
 #[derive(Clone)]
 pub struct ConditionalScheduler {
-    store: HashMap<String, f32>,
+    active_commands: HashMap<usize, CommandIndex>,
     conds: Vec<(Box<dyn Condition>, fn() -> Command)>,
 }
 
@@ -200,27 +218,37 @@ impl ConditionalScheduler {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            store: HashMap::new(),
+            active_commands: HashMap::new(),
             conds: Vec::new(),
         }
     }
 
     pub fn poll(&mut self, manager: &mut CommandManager) {
         
-        for (cond, cmd) in &mut self.conds{
+        for i in 0..self.conds.len(){
+            let (cond, cmd) = &mut self.conds[i];
             let condition_result = cond.get_condition();
 
             match condition_result{
                 ConditionResponse::Start => {
                     let command = cmd();
-                    manager.cond_schedule(command);
+                    let cmd_idx = manager.cond_schedule(command);
+                    self.active_commands.insert(i, cmd_idx);
                 },
                 ConditionResponse::Continue => {
-
+                    if !self.active_commands.contains_key(&i) {
+                        let command = cmd();
+                        let cmd_idx = manager.cond_schedule(command);
+                        self.active_commands.insert(i, cmd_idx);    
+                    }
                 },
                 ConditionResponse::Stop => {
-
-                }
+                    if self.active_commands.contains_key(&i) {
+                        manager.interrupt_command(*self.active_commands.get(&i).unwrap());
+                        self.active_commands.remove(&i);    
+                    }
+                },
+                ConditionResponse::NoChange => {}
             }
         }
     }
@@ -228,38 +256,10 @@ impl ConditionalScheduler {
     pub fn add_cond(&mut self, cond: impl Condition, cmd: fn() -> Command) {
         self.conds.push((cond.clone_boxed(), cmd));
     }
-
-    pub fn store_int(&mut self, name: &str, value: i32) {
-        self.store.insert(name.to_string(), value as f32);
-    }
-
-    #[must_use]
-    pub fn get_int(&self, name: &str) -> Option<i32> {
-        self.store.get(name).map(|x| *x as i32)
-    }
-
-    pub fn store_float(&mut self, name: &str, value: f32) {
-        self.store.insert(name.to_string(), value);
-    }
-
-    #[must_use]
-    pub fn get_float(&self, name: &str) -> Option<f32> {
-        self.store.get(name).copied()
-    }
-
-    pub fn store_bool(&mut self, name: &str, value: bool) {
-        self.store.insert(name.to_string(), value as i32 as f32);
-    }
-
-    #[must_use]
-    pub fn get_bool(&self, name: &str) -> Option<bool> {
-        self.store.get(name).map(|x| *x as i32 != 0)
-    }
 }
 impl std::fmt::Debug for ConditionalScheduler {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ConditionalScheduler")
-            .field("store", &self.store)
             .finish()
     }
 }

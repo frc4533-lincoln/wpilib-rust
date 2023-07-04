@@ -41,6 +41,7 @@ pub mod macros;
 pub enum EventTypes {
     Init,
     Periodic,
+    Overrun,
     End,
 }
 

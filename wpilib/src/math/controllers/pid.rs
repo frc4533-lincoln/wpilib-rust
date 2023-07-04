@@ -18,7 +18,8 @@ pub struct PIDController {
 }
 
 impl PIDController {
-    #[must_use] pub const fn new(k_p: f64, k_i: f64, k_d: f64) -> Self {
+    #[must_use]
+    pub const fn new(k_p: f64, k_i: f64, k_d: f64) -> Self {
         Self {
             k_p,
             k_i,

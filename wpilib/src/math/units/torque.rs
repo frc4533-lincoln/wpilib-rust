@@ -15,27 +15,35 @@ unit_conversion!(NewtonCentimeter f64, FootPound f64, newton_centimeter_to_foot_
 unit_conversion!(NewtonCentimeter f64, InchPound f64, newton_centimeter_to_inch_pound);
 unit_conversion!(KilogramMeter f64, FootPound f64, kilogram_meter_to_foot_pound);
 
+#[must_use]
 pub fn newton_meter_to_newton_centimeter(newton_meter: f64) -> f64 {
     newton_meter * 100.0
 }
+#[must_use]
 pub fn newton_meter_to_kilogram_meter(newton_meter: f64) -> f64 {
     newton_meter * 0.101_972
 }
+#[must_use]
 pub fn newton_meter_to_foot_pound(newton_meter: f64) -> f64 {
     newton_meter * 0.737_562
 }
+#[must_use]
 pub fn newton_meter_to_inch_pound(newton_meter: f64) -> f64 {
     newton_meter * 8.85075
 }
+#[must_use]
 pub fn newton_centimeter_to_kilogram_meter(newton_centimeter: f64) -> f64 {
     newton_meter_to_kilogram_meter(newton_centimeter / 100.0)
 }
+#[must_use]
 pub fn newton_centimeter_to_foot_pound(newton_centimeter: f64) -> f64 {
     newton_meter_to_foot_pound(newton_centimeter / 100.0)
 }
+#[must_use]
 pub fn newton_centimeter_to_inch_pound(newton_centimeter: f64) -> f64 {
     newton_meter_to_inch_pound(newton_centimeter / 100.0)
 }
+#[must_use]
 pub fn kilogram_meter_to_foot_pound(kilogram_meter: f64) -> f64 {
     kilogram_meter * 7.23301
 }

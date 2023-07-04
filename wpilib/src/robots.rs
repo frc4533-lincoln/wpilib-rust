@@ -5,7 +5,7 @@ use std::{
 
 use parking_lot::Mutex;
 
-use crate::{command::CommandManager, if_sim, if_not_athena};
+use crate::{command::CommandManager, if_not_athena, if_sim};
 
 static PERIODIC_TIME: Mutex<f64> = Mutex::new(0.02);
 
@@ -21,16 +21,20 @@ pub enum RobotMode {
     Test = 3,
 }
 impl RobotMode {
-    #[must_use] pub const fn is_disabled(&self) -> bool {
+    #[must_use]
+    pub const fn is_disabled(&self) -> bool {
         matches!(self, Self::Disabled)
     }
-    #[must_use] pub const fn is_autonomous(&self) -> bool {
+    #[must_use]
+    pub const fn is_autonomous(&self) -> bool {
         matches!(self, Self::Autonomous)
     }
-    #[must_use] pub const fn is_teleop(&self) -> bool {
+    #[must_use]
+    pub const fn is_teleop(&self) -> bool {
         matches!(self, Self::Teleop)
     }
-    #[must_use] pub const fn is_test(&self) -> bool {
+    #[must_use]
+    pub const fn is_test(&self) -> bool {
         matches!(self, Self::Test)
     }
 }

@@ -5,7 +5,7 @@ use parking_lot::Mutex;
 
 use super::{commands::CommandTrait, Command};
 
-static MANAGER: Mutex<Lazy<CommandManager>> = Mutex::new(Lazy::new(|| CommandManager::new()));
+static MANAGER: Mutex<Lazy<CommandManager>> = Mutex::new(Lazy::new(CommandManager::new));
 
 type CommandIndex = usize;
 type SubsystemUUID = u8;
@@ -120,7 +120,7 @@ impl CommandManager {
     }
 
     fn add_command(&mut self, command: Command) -> usize {
-        if let Some(index) = self.commands.iter().position(|x| x.is_none()) {
+        if let Some(index) = self.commands.iter().position(Option::is_none) {
             self.commands[index] = Some(command);
             index
         } else {
@@ -176,6 +176,7 @@ pub struct ConditionalScheduler {
     conds: Vec<(fn(&mut Self) -> bool, fn() -> Command)>,
 }
 impl ConditionalScheduler {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             store: HashMap::new(),
@@ -200,6 +201,7 @@ impl ConditionalScheduler {
         self.store.insert(name.to_string(), value as f32);
     }
 
+    #[must_use]
     pub fn get_int(&self, name: &str) -> Option<i32> {
         self.store.get(name).map(|x| *x as i32)
     }
@@ -208,14 +210,16 @@ impl ConditionalScheduler {
         self.store.insert(name.to_string(), value);
     }
 
+    #[must_use]
     pub fn get_float(&self, name: &str) -> Option<f32> {
-        self.store.get(name).map(|x| *x)
+        self.store.get(name).copied()
     }
 
     pub fn store_bool(&mut self, name: &str, value: bool) {
         self.store.insert(name.to_string(), value as i32 as f32);
     }
 
+    #[must_use]
     pub fn get_bool(&self, name: &str) -> Option<bool> {
         self.store.get(name).map(|x| *x as i32 != 0)
     }

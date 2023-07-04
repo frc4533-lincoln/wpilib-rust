@@ -11,7 +11,8 @@ pub struct LQRController {
 }
 
 impl LQRController {
-    #[must_use] pub const fn new(k: f64, r: f64, q: f64) -> Self {
+    #[must_use]
+    pub const fn new(k: f64, r: f64, q: f64) -> Self {
         Self {
             k,
             r,

@@ -7,9 +7,17 @@ macro_rules! if_sim {
 }
 
 #[macro_export]
-macro_rules! if_real {
+macro_rules! if_not_athena {
     ($($t:tt)*) => {
-        #[cfg(not(feature = "simulation"))]
+        #[cfg(feature = "other-target")]
+        $($t)*
+    }
+}
+
+#[macro_export]
+macro_rules! if_athena {
+    ($($t:tt)*) => {
+        #[cfg(feature = "athena")]
         $($t)*
     }
 }

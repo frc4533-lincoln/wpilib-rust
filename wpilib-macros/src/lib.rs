@@ -1,6 +1,53 @@
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
+use std::sync::atomic::AtomicU8;
+
+fn is_non_static_method(method: &syn::ImplItemFn) -> bool {
+    if method.sig.inputs.len() > 0 {
+        match method.sig.inputs.first().unwrap() {
+            syn::FnArg::Receiver(_) => true,
+            _ => false,
+        }
+    } else {
+        false
+    }
+}
+#[allow(dead_code)]
+fn is_static_method(method: &syn::ImplItemFn) -> bool {
+    !is_non_static_method(method)
+}
+fn method_takes_only_self_ref(method: &syn::ImplItemFn) -> bool {
+    let name = method.sig.ident.to_string();
+    method.sig.inputs.len() == 1
+        && match method.sig.inputs.first().expect(format!("expected a receiver as first arg on {}", name).as_str()) {
+            syn::FnArg::Receiver(receiver) => {
+                receiver.reference.is_some() && receiver.mutability.is_none()
+            },
+            _ => false,
+        }
+}
+fn is_public_method(method: &syn::ImplItemFn) -> bool {
+    match method.vis {
+        syn::Visibility::Public(_) => true,
+        _ => false,
+    }
+}
+fn method_return_type_is(method: &syn::ImplItemFn, ty: &str) -> bool {
+    match method.sig.output {
+        syn::ReturnType::Default => {
+            if ty == "" {
+                true
+            } else {
+                false
+            }
+        },
+        syn::ReturnType::Type(_, ref t) => match **t {
+            syn::Type::Path(ref path) => path.path.segments.last().unwrap().ident == ty,
+            _ => false,
+        },
+    }
+}
 
 #[proc_macro_attribute]
 pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream {
@@ -23,40 +70,75 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
 
     // go through all funcs, if none are decorated with `#[new]` then throw an error
     let mut new_func = None;
+    let mut periodic_func = None;
+    let mut test_command_func = None;
+    let mut default_command_func = None;
     let mut other_funcs = Vec::new();
     for item in implementation.items {
         if let syn::ImplItem::Fn(method) = item {
             let mut attrs = method.attrs.iter().clone();
-            if attrs.len() > 1 {
-                panic!("expected only one attribute per function");
-            }
+
+            //for ignor attributes just skip the function
             if attrs.clone().any(|attr| attr.path().is_ident("ignore")) {
                 continue;
             }
-            if attrs.any(|attr| attr.path().is_ident("new")) {
+
+            if attrs.clone().any(|attr| attr.path().is_ident("new")) {
                 if new_func.is_some() {
                     panic!("expected only one function decorated with `#[new]`");
                 }
+                if is_non_static_method(&method) {
+                    panic!("expected function decorated with `#[new]` to be static");
+                }
                 new_func = Some(method);
+                continue;
+            }
+            if attrs.clone().any(|attr| attr.path().is_ident("periodic")) {
+                if periodic_func.is_some() {
+                    panic!("expected only one function decorated with `#[periodic]`");
+                }
+                if !method_takes_only_self_ref(&method) {
+                    panic!("expected function decorated with `#[periodic]` to take only a self reference");
+                }
+                if !method_return_type_is(&method, "") {
+                    panic!("expected function decorated with `#[periodic]` to return nothing");
+                }
+                periodic_func = Some(method);
+                continue;
+            }
+            if attrs.clone().any(|attr| attr.path().is_ident("test_command")) {
+                if test_command_func.is_some() {
+                    panic!("expected only one function decorated with `#[test_command]`");
+                }
+                if !method_return_type_is(&method, "Command") {
+                    panic!("expected function decorated with `#[test_command]` to return a Command");
+                }
+                if !method_takes_only_self_ref(&method) {
+                    panic!("expected function decorated with `#[test_command]` to take only a self reference");
+                }
+                test_command_func = Some(method);
+                continue;
+            }
+            if attrs.any(|attr| attr.path().is_ident("default_command")) {
+                let new_method = method.clone();
+                if default_command_func.is_some() {
+                    panic!("expected only one function decorated with `#[default_command]`");
+                }
+                if !method_return_type_is(&method, "Command") {
+                    panic!("expected function decorated with `#[default_command]` to return a Command");
+                }
+                if !method_takes_only_self_ref(&method) {
+                    panic!("expected function decorated with `#[default_command]` to take only a self reference");
+                }
+                default_command_func = Some(new_method);
+            }
+
+            let requires_self = is_non_static_method(&method);
+            let is_public = is_public_method(&method);
+            if requires_self && is_public {
+                other_funcs.push(method);
             } else {
-                let mut requires_self = false;
-                for arg in &method.sig.inputs {
-                    if let syn::FnArg::Receiver(_) = arg {
-                        requires_self = true;
-                    }
-                }
-                let is_public;
-                match method.vis {
-                    syn::Visibility::Public(_) => is_public = true,
-                    _ => {
-                        is_public = false;
-                    }
-                }
-                if requires_self && is_public {
-                    other_funcs.push(method);
-                } else {
-                    impl_block.push(method);
-                }
+                impl_block.push(method);
             }
         }
     }
@@ -69,10 +151,49 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
     new_func.sig.ident = syn::Ident::new("__new", new_func.sig.ident.span());
     new_func.vis = syn::Visibility::Inherited;
     new_func.attrs = Vec::new();
-
-    //put the __new function in an impl block
-
     impl_block.push(new_func);
+
+    //get the periodic function and rewrite it as a static function with name `periodic`
+    if let Some(periodic_func) = periodic_func {
+        let mut periodic_func = periodic_func;
+        periodic_func.sig.ident = syn::Ident::new("periodic_inner", periodic_func.sig.ident.span());
+        periodic_func.vis = syn::Visibility::Inherited;
+        other_funcs.push(periodic_func);
+        let static_func = syn::parse_quote! {
+            pub fn periodic() {
+                let mut this = #struct_name_caps.lock();
+                this.__periodic_inner();
+            }
+        };
+        impl_block.push(static_func);
+    } else {
+        let periodic_func = syn::parse_quote! {
+            pub fn periodic() {}
+        };
+        impl_block.push(periodic_func);
+    }
+
+    if let Some(default_command_func) = default_command_func {
+        //add __ infront of the ident
+        let ident = syn::Ident::new(
+            &format!("__{}", default_command_func.sig.ident),
+            default_command_func.sig.ident.span()
+        );
+        let static_func = syn::parse_quote! {
+            pub fn default_command() -> Command {
+                let mut this = #struct_name_caps.lock();
+                this.#ident()
+            }
+        };
+        impl_block.push(static_func);
+    } else {
+        let default_command_func = syn::parse_quote! {
+            pub fn default_command() -> Command {
+                Default::default()
+            }
+        };
+        impl_block.push(default_command_func);
+    }
 
     let fn_idents: Vec<String> = other_funcs
         .iter()
@@ -81,6 +202,8 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
 
     //for each func in the impl block, make the non static version private and make a public static version
     for item_fn in &mut other_funcs {
+        item_fn.attrs = Vec::new();
+
         let static_ident =
             syn::Ident::new(&format!("{}", item_fn.sig.ident), item_fn.sig.ident.span());
 
@@ -149,6 +272,12 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
 
         impl_block.push(item_fn.clone());
 
+
+        let fn_str = item_fn.sig.ident.to_string();
+        if fn_str == "default_command_inner" || fn_str == "periodic_inner" {
+            continue;
+        }
+
         // get all input idents
         let mut input_idents = Vec::new();
         let mut input_types = Vec::new();
@@ -179,13 +308,12 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
         }
     };
 
-    // panic!("{}", output_stream.to_string());
-
     output_stream.into()
 }
 
+static SUID_COUNTER: AtomicU8 = AtomicU8::new(0);
 /// Automatically sets up some boilerplate needed for static subsystems.
-/// Expects Subsystem name and UUID(u8) as arguments.
+/// Expects Subsystem name as an argument.
 /// Example: subsystem!(TestSubsystem, 1u8)
 #[proc_macro]
 pub fn subsystem(input: TokenStream) -> TokenStream {
@@ -200,9 +328,6 @@ pub fn subsystem(input: TokenStream) -> TokenStream {
     let struct_name =
         syn::parse2::<syn::Ident>(iter.next().expect("could not find first ident").into())
             .expect("could not parse first ident as an ident");
-    let literal =
-        syn::parse2::<syn::LitInt>(iter.next().expect("could not find second literal").into())
-            .expect("could not parse second literal as an int");
 
     //get the struct name in caps as an identifier
     let struct_name_caps = syn::Ident::new(
@@ -212,10 +337,14 @@ pub fn subsystem(input: TokenStream) -> TokenStream {
 
     let mut output = TokenStream2::new();
 
+    //turn SUID_COUNT into a literal int
+    let count = SUID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    let suid_count = syn::LitInt::new(&count.to_string(), proc_macro2::Span::call_site());
+
     // create a static variable for the struct
     let static_variable = quote! {
         static #struct_name_caps: once_cell::sync::Lazy<parking_lot::Mutex<#struct_name>> = once_cell::sync::Lazy::new(|| parking_lot::Mutex::new(#struct_name::__new()));
-        static UUID: u8 = #literal;
+        static SUID: u8 = #suid_count;
     };
     output.extend(static_variable);
 
@@ -226,8 +355,8 @@ pub fn subsystem(input: TokenStream) -> TokenStream {
                 let mut this = #struct_name_caps.lock();
                 this
             }
-            pub fn uuid() -> u8 {
-                UUID as u8
+            pub fn suid() -> u8 {
+                SUID as u8
             }
             pub fn name() -> &'static str {
                 stringify!(#struct_name)

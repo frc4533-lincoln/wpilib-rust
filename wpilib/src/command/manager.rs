@@ -8,13 +8,13 @@ use super::{commands::CommandTrait, Command};
 static MANAGER: Mutex<Lazy<CommandManager>> = Mutex::new(Lazy::new(|| CommandManager::new()));
 
 type CommandIndex = usize;
-type SubsystemUUID = u8;
+type SubsystemSUID = u8;
 
 pub struct CommandManager {
-    periodic_callbacks: Vec<Box<dyn Fn() + Send + Sync>>,
+    periodic_callbacks: Vec<fn()>,
     commands: Vec<Option<Command>>,
-    default_commands: HashMap<SubsystemUUID, CommandIndex>,
-    requirements: HashMap<SubsystemUUID, CommandIndex>,
+    default_commands: HashMap<SubsystemSUID, CommandIndex>,
+    requirements: HashMap<SubsystemSUID, CommandIndex>,
     initialized_commands: HashSet<CommandIndex>,
     orphaned_commands: HashSet<CommandIndex>,
     cond_schedulers: Vec<ConditionalScheduler>,
@@ -45,13 +45,14 @@ impl CommandManager {
         }
     }
 
-    pub fn register_subsystem(uuid: u8, periodic_callback: fn(), default_command: Option<Command>) {
+    pub fn register_subsystem(suid: u8, periodic_callback: fn(), default_command: Option<Command>) {
         let mut scheduler = MANAGER.lock();
         scheduler
             .periodic_callbacks
-            .push(Box::new(periodic_callback));
+            .push(periodic_callback);
         let cmd_idx = scheduler.add_command(default_command.unwrap_or_default());
-        scheduler.default_commands.insert(uuid, cmd_idx);
+        scheduler.default_commands.insert(suid, cmd_idx);
+        drop(scheduler);
     }
 
     /// Will run all periodic callbacks, run all conditional schedulers, init all un-initialized commands, and run all commands
@@ -67,9 +68,9 @@ impl CommandManager {
         for callback in &self.periodic_callbacks {
             callback();
         }
-        for (uuid, cmd_idx) in &self.default_commands {
-            if !self.requirements.contains_key(uuid) {
-                self.requirements.insert(*uuid, *cmd_idx);
+        for (suid, cmd_idx) in &self.default_commands {
+            if !self.requirements.contains_key(suid) {
+                self.requirements.insert(*suid, *cmd_idx);
             }
         }
     }
@@ -233,9 +234,9 @@ impl std::fmt::Debug for ConditionalScheduler {
 macro_rules! register_subsystem {
     ($name:ident) => {
         CommandManager::register_subsystem(
-            $name::uuid(),
-            || $name::get_static().periodic(),
-            $name::get_static().get_default_command(),
+            $name::suid(),
+            || $name::periodic(),
+            Some($name::default_command()),
         );
     };
 }

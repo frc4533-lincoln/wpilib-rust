@@ -1,7 +1,7 @@
 use wpilib_macros::{subsystem, subsystem_methods};
 
 use crate::command::{
-    commands::CommandTrait, manager::CommandManager, subsystem::Subsystem, Command,
+    commands::CommandTrait, manager::CommandManager, Command,
     ConditionalScheduler,
 };
 
@@ -28,40 +28,47 @@ fn test_command() {
     .unwrap();
 }
 
-// static UUID: u8 = 0;
-
-// subsystem!{ name: TestSubsystem, upper: TESTSUBSYSTEM }
-
 struct TestSubsystem {
-    _motor: String,
-    _is_motor_running: bool,
+    motor_running: bool,
 }
 
-subsystem!(TestSubsystem, 1);
+subsystem!(TestSubsystem);
 
 #[subsystem_methods]
 impl TestSubsystem {
     #[new]
     fn constructor() -> Self {
         Self {
-            _motor: "Motor".to_string(),
-            _is_motor_running: false,
+            motor_running: false,
         }
     }
 
-    pub fn is_motor_running(&self) -> bool {
-        self._is_motor_running
+    #[periodic]
+    fn periodic(&self) {
+        println!("Periodic");
     }
 
-    pub fn cmd_activate_motor(&mut self) -> Command {
-        self.is_motor_running();
-        CommandBuilder::start_only(
-            || {
-                Self::get_static()._is_motor_running = true;
-            },
-            vec![Self::uuid()],
-        )
-        .with_name("Activate Motor")
+    pub fn is_motor_running(&self) -> bool {
+        self.motor_running
+    }
+
+    pub fn start_motor(&mut self) {
+        self.motor_running = true;
+    }
+
+    #[default_command]
+    pub fn cmd_activate_motor(&self) -> Command {
+        if !self.is_motor_running() {
+            CommandBuilder::start_only(
+                || {
+                    Self::start_motor()
+                },
+                vec![Self::suid()],
+            )
+            .with_name("Activate Motor")
+        } else {
+            Default::default()
+        }
     }
 
     #[allow(dead_code)]
@@ -70,14 +77,15 @@ impl TestSubsystem {
     }
 }
 
-impl Subsystem for TestSubsystem {
-    fn get_default_command(&self) -> Option<Command> {
-        Some(Self::cmd_activate_motor())
-    }
-}
+
 
 #[test]
 fn test_subsystem() {
+    // CommandManager::register_subsystem(
+    //     TestSubsystem::suid(),
+    //     || TestSubsystem::periodic(),
+    //     Some(TestSubsystem::default_command()),
+    // );
     register_subsystem!(TestSubsystem);
     CommandManager::run();
     assert!(TestSubsystem::is_motor_running());

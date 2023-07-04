@@ -35,13 +35,6 @@ impl RobotMode {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum HardwareType {
-    Sim = 0,
-    Athena = 1,
-    Other = 2,
-}
-
 pub trait RobotCore {
     fn start(&mut self);
 

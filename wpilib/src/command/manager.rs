@@ -225,6 +225,7 @@ impl CommandManager {
 #[derive(Debug, Clone, Copy)]
 pub enum ConditionResponse {
     Start,
+    Continue,
     Stop,
     NoChange,
 }
@@ -252,6 +253,7 @@ impl<T> Condition for OnTrue<T>
     fn get_condition(&mut self) -> ConditionResponse {
         let state = (self.function)();
         if state == true && self.last_state == false {
+            self.last_state = state;
             return ConditionResponse::Start;
         }
         self.last_state = state;
@@ -292,9 +294,12 @@ impl<T> Condition for WhileTrue<T>
     where T:  Fn() -> bool + Send + Sync + 'static{
     fn get_condition(&mut self) -> ConditionResponse {
         let state = (self.function)();
-        if state == true {
+        if state == true && self.last_state == false {
             self.last_state = state;
             return ConditionResponse::Start;
+        } else if state == true {
+            self.last_state = state;
+            return ConditionResponse::Continue
         } else if state == false && self.last_state == true{
             self.last_state = state;
             return ConditionResponse::Stop
@@ -347,11 +352,17 @@ impl ConditionalScheduler {
 
             match condition_result{
                 ConditionResponse::Start => {
+                    let command = cmd();
+                    let cmd_idx = manager.cond_schedule(command);
+                    println!("start"); 
+                    self.active_commands.insert(i, cmd_idx);
+                },
+                ConditionResponse::Continue => {
                     if !self.active_commands.contains_key(&i) {
                         let command = cmd();
                         let cmd_idx = manager.cond_schedule(command);
-                        println!("start"); 
-                        self.active_commands.insert(i, cmd_idx);
+                        println!("continue"); 
+                        self.active_commands.insert(i, cmd_idx);    
                     }
                 },
                 ConditionResponse::Stop => {

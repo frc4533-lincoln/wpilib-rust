@@ -82,11 +82,6 @@ impl TestSubsystem {
 
 #[test]
 fn test_subsystem() {
-    // CommandManager::register_subsystem(
-    //     TestSubsystem::suid(),
-    //     || TestSubsystem::periodic(),
-    //     Some(TestSubsystem::default_command()),
-    // );
     register_subsystem!(TestSubsystem);
     CommandManager::run();
     assert!(TestSubsystem::is_motor_running());

@@ -246,9 +246,12 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
             let mut last_two_tokens: VecDeque<TokenTree2> = VecDeque::new();
 
             let check_last_two_tokens = |ltt: &VecDeque<TokenTree2>| {
-                ltt.len() > 1
-                && ltt[0].to_string() == "self"
-                && ltt[1].to_string() == "."
+                if ltt.len() > 1 {
+                    ltt[0].to_string() == "self"
+                    && ltt[1].to_string() == "."
+                } else {
+                    false
+                }
             };
 
             for token in old_stream.clone().into_iter() {
@@ -267,9 +270,7 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
                         continue;
                     },
                     TokenTree2::Ident(ident) => {
-                        //if the ident is in fn_idents
-                        if fn_idents.contains(&ident.to_string()) 
-                        && last_two_tokens.len() > 1 
+                        if fn_idents.contains(&ident.to_string())
                         && check_last_two_tokens(&last_two_tokens) {
                             //replace the ident with __<name>
                             let new_ident = syn::Ident::new(&format!("__{}", ident), ident.span());

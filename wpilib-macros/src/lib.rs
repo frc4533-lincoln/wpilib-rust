@@ -1,7 +1,9 @@
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
+use proc_macro2::TokenTree as TokenTree2;
 use quote::quote;
 use std::sync::atomic::AtomicU8;
+use std::collections::VecDeque;
 
 fn is_non_static_method(method: &syn::ImplItemFn) -> bool {
     if method.sig.inputs.len() > 0 {
@@ -204,6 +206,26 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
     for item_fn in &mut other_funcs {
         item_fn.attrs = Vec::new();
 
+        //if item has lifetime or a lifetime in any of its args throw an error
+        if item_fn.sig.generics.lifetimes().count() > 0
+            || item_fn.sig.inputs.iter().any(|arg| match arg {
+                syn::FnArg::Receiver(rec) => {
+                    rec.reference.as_ref().map_or(false, |(_, lifetime)| lifetime.is_some())
+                },
+                syn::FnArg::Typed(arg) => {
+                    match *arg.ty.clone() {
+                        syn::Type::Reference(ref_type) => {
+                            ref_type.lifetime.is_some()
+                        },
+                        _ => false
+                    }
+                }
+            })
+        {
+            let ident_str = item_fn.sig.ident.to_string();
+            panic!("expected function `{}` to not have any lifetimes", ident_str);
+        }
+
         let static_ident =
             syn::Ident::new(&format!("{}", item_fn.sig.ident), item_fn.sig.ident.span());
 
@@ -220,49 +242,49 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
         let block_stream = quote!(#block);
         //check all the idents of the block
         let mut new_stream = TokenStream2::new();
-        for token in block_stream.into_iter() {
-            //if token is an ident
-            if let proc_macro2::TokenTree::Ident(ident) = token {
-                //if the ident is in fn_idents
-                if fn_idents.contains(&ident.to_string()) {
-                    //replace the ident with __<name>
-                    let new_ident = syn::Ident::new(&format!("__{}", ident), ident.span());
-                    new_stream.extend(std::iter::once(proc_macro2::TokenTree::Ident(new_ident)));
-                } else {
-                    //if the ident is not in fn_idents, just add it to the new stream
-                    new_stream.extend(std::iter::once(proc_macro2::TokenTree::Ident(ident)));
+        fn clean_block(new_stream: &mut TokenStream2, old_stream: &TokenStream2, fn_idents: &Vec<String>) {
+            let mut last_two_tokens: VecDeque<TokenTree2> = VecDeque::new();
+
+            let check_last_two_tokens = |ltt: &VecDeque<TokenTree2>| {
+                ltt.len() > 1
+                && ltt[0].to_string() == "self"
+                && ltt[1].to_string() == "."
+            };
+
+            for token in old_stream.clone().into_iter() {
+
+                if last_two_tokens.len() > 2 {
+                    last_two_tokens.pop_front();
                 }
-            } else if let proc_macro2::TokenTree::Group(group) = token {
-                //if the token is a group, scrape through the group and replace all instances any funcs in fn_idents with their __<name> version
-                let mut new_group_stream = TokenStream2::new();
-                for group_token in group.stream().into_iter() {
-                    //if token is an ident
-                    if let proc_macro2::TokenTree::Ident(ident) = group_token {
+
+                match token.clone() {
+                    TokenTree2::Group(group) => {
+                        let mut new_group_stream = TokenStream2::new();
+                        clean_block(&mut new_group_stream, &group.stream(), fn_idents);
+                        let new_group = proc_macro2::Group::new(group.delimiter(), new_group_stream);
+                        new_stream.extend(std::iter::once(proc_macro2::TokenTree::Group(new_group)));
+                        last_two_tokens.clear();
+                        continue;
+                    },
+                    TokenTree2::Ident(ident) => {
                         //if the ident is in fn_idents
-                        if fn_idents.contains(&ident.to_string()) {
+                        if fn_idents.contains(&ident.to_string()) 
+                        && last_two_tokens.len() > 1 
+                        && check_last_two_tokens(&last_two_tokens) {
                             //replace the ident with __<name>
                             let new_ident = syn::Ident::new(&format!("__{}", ident), ident.span());
-                            new_group_stream
-                                .extend(std::iter::once(proc_macro2::TokenTree::Ident(new_ident)));
-                        } else {
-                            //if the ident is not in fn_idents, just add it to the new stream
-                            new_group_stream
-                                .extend(std::iter::once(proc_macro2::TokenTree::Ident(ident)));
+                            new_stream.extend(std::iter::once(proc_macro2::TokenTree::Ident(new_ident)));
+                            last_two_tokens.clear();
+                            continue;
                         }
-                    } else {
-                        //if the token is not an ident, just add it to the new stream
-                        new_group_stream.extend(std::iter::once(group_token));
-                    }
+                    },
+                    _ => {}
                 }
-                //turn new group stream back into group
-                let new_group = proc_macro2::Group::new(group.delimiter(), new_group_stream);
-                //add the new group to the new stream
-                new_stream.extend(std::iter::once(proc_macro2::TokenTree::Group(new_group)));
-            } else {
-                //if the token is not an ident, just add it to the new stream
+                last_two_tokens.push_back(token.clone());
                 new_stream.extend(std::iter::once(token));
             }
-        }
+        } 
+        clean_block(&mut new_stream, &block_stream, &fn_idents);
         //turn new stream back into block
         let new_block = syn::parse2::<syn::Block>(new_stream).expect("couldnt scrape block");
         //replace the block in the function with the new block

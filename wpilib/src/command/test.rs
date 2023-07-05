@@ -48,14 +48,6 @@ impl TestSubsystem {
         println!("Periodic");
     }
 
-    pub fn is_motor_running(&self) -> bool {
-        self.motor_running
-    }
-
-    pub fn start_motor(&mut self) {
-        self.motor_running = true;
-    }
-
     #[default_command]
     pub fn cmd_activate_motor(&self) -> Command {
         if !self.is_motor_running() {
@@ -70,6 +62,15 @@ impl TestSubsystem {
             Default::default()
         }
     }
+
+    pub fn is_motor_running(&self) -> bool {
+        self.motor_running
+    }
+
+    pub fn start_motor(&mut self) {
+        self.motor_running = true;
+    }
+
 
     #[allow(dead_code)]
     fn motor_name() -> String {

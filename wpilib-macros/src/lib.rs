@@ -2,8 +2,8 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use proc_macro2::TokenTree as TokenTree2;
 use quote::quote;
-use std::sync::atomic::AtomicU8;
 use std::collections::VecDeque;
+use std::sync::atomic::AtomicU8;
 
 fn is_non_static_method(method: &syn::ImplItemFn) -> bool {
     if method.sig.inputs.len() > 0 {
@@ -22,10 +22,15 @@ fn is_static_method(method: &syn::ImplItemFn) -> bool {
 fn method_takes_only_self_ref(method: &syn::ImplItemFn) -> bool {
     let name = method.sig.ident.to_string();
     method.sig.inputs.len() == 1
-        && match method.sig.inputs.first().expect(format!("expected a receiver as first arg on {}", name).as_str()) {
+        && match method
+            .sig
+            .inputs
+            .first()
+            .expect(format!("expected a receiver as first arg on {}", name).as_str())
+        {
             syn::FnArg::Receiver(receiver) => {
                 receiver.reference.is_some() && receiver.mutability.is_none()
-            },
+            }
             _ => false,
         }
 }
@@ -43,7 +48,7 @@ fn method_return_type_is(method: &syn::ImplItemFn, ty: &str) -> bool {
             } else {
                 false
             }
-        },
+        }
         syn::ReturnType::Type(_, ref t) => match **t {
             syn::Type::Path(ref path) => path.path.segments.last().unwrap().ident == ty,
             _ => false,
@@ -108,12 +113,17 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
                 periodic_func = Some(method);
                 continue;
             }
-            if attrs.clone().any(|attr| attr.path().is_ident("test_command")) {
+            if attrs
+                .clone()
+                .any(|attr| attr.path().is_ident("test_command"))
+            {
                 if test_command_func.is_some() {
                     panic!("expected only one function decorated with `#[test_command]`");
                 }
                 if !method_return_type_is(&method, "Command") {
-                    panic!("expected function decorated with `#[test_command]` to return a Command");
+                    panic!(
+                        "expected function decorated with `#[test_command]` to return a Command"
+                    );
                 }
                 if !method_takes_only_self_ref(&method) {
                     panic!("expected function decorated with `#[test_command]` to take only a self reference");
@@ -127,7 +137,9 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
                     panic!("expected only one function decorated with `#[default_command]`");
                 }
                 if !method_return_type_is(&method, "Command") {
-                    panic!("expected function decorated with `#[default_command]` to return a Command");
+                    panic!(
+                        "expected function decorated with `#[default_command]` to return a Command"
+                    );
                 }
                 if !method_takes_only_self_ref(&method) {
                     panic!("expected function decorated with `#[default_command]` to take only a self reference");
@@ -179,7 +191,7 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
         //add __ infront of the ident
         let ident = syn::Ident::new(
             &format!("__{}", default_command_func.sig.ident),
-            default_command_func.sig.ident.span()
+            default_command_func.sig.ident.span(),
         );
         let static_func = syn::parse_quote! {
             pub fn default_command() -> Command {
@@ -209,21 +221,21 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
         //if item has lifetime or a lifetime in any of its args throw an error
         if item_fn.sig.generics.lifetimes().count() > 0
             || item_fn.sig.inputs.iter().any(|arg| match arg {
-                syn::FnArg::Receiver(rec) => {
-                    rec.reference.as_ref().map_or(false, |(_, lifetime)| lifetime.is_some())
+                syn::FnArg::Receiver(rec) => rec
+                    .reference
+                    .as_ref()
+                    .map_or(false, |(_, lifetime)| lifetime.is_some()),
+                syn::FnArg::Typed(arg) => match *arg.ty.clone() {
+                    syn::Type::Reference(ref_type) => ref_type.lifetime.is_some(),
+                    _ => false,
                 },
-                syn::FnArg::Typed(arg) => {
-                    match *arg.ty.clone() {
-                        syn::Type::Reference(ref_type) => {
-                            ref_type.lifetime.is_some()
-                        },
-                        _ => false
-                    }
-                }
             })
         {
             let ident_str = item_fn.sig.ident.to_string();
-            panic!("expected function `{}` to not have any lifetimes", ident_str);
+            panic!(
+                "expected function `{}` to not have any lifetimes",
+                ident_str
+            );
         }
 
         let static_ident =
@@ -242,20 +254,22 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
         let block_stream = quote!(#block);
         //check all the idents of the block
         let mut new_stream = TokenStream2::new();
-        fn clean_block(new_stream: &mut TokenStream2, old_stream: &TokenStream2, fn_idents: &Vec<String>) {
+        fn clean_block(
+            new_stream: &mut TokenStream2,
+            old_stream: &TokenStream2,
+            fn_idents: &Vec<String>,
+        ) {
             let mut last_two_tokens: VecDeque<TokenTree2> = VecDeque::new();
 
             let check_last_two_tokens = |ltt: &VecDeque<TokenTree2>| {
                 if ltt.len() > 1 {
-                    ltt[0].to_string() == "self"
-                    && ltt[1].to_string() == "."
+                    ltt[0].to_string() == "self" && ltt[1].to_string() == "."
                 } else {
                     false
                 }
             };
 
             for token in old_stream.clone().into_iter() {
-
                 if last_two_tokens.len() > 2 {
                     last_two_tokens.pop_front();
                 }
@@ -264,27 +278,31 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
                     TokenTree2::Group(group) => {
                         let mut new_group_stream = TokenStream2::new();
                         clean_block(&mut new_group_stream, &group.stream(), fn_idents);
-                        let new_group = proc_macro2::Group::new(group.delimiter(), new_group_stream);
-                        new_stream.extend(std::iter::once(proc_macro2::TokenTree::Group(new_group)));
+                        let new_group =
+                            proc_macro2::Group::new(group.delimiter(), new_group_stream);
+                        new_stream
+                            .extend(std::iter::once(proc_macro2::TokenTree::Group(new_group)));
                         last_two_tokens.clear();
                         continue;
-                    },
+                    }
                     TokenTree2::Ident(ident) => {
                         if fn_idents.contains(&ident.to_string())
-                        && check_last_two_tokens(&last_two_tokens) {
+                            && check_last_two_tokens(&last_two_tokens)
+                        {
                             //replace the ident with __<name>
                             let new_ident = syn::Ident::new(&format!("__{}", ident), ident.span());
-                            new_stream.extend(std::iter::once(proc_macro2::TokenTree::Ident(new_ident)));
+                            new_stream
+                                .extend(std::iter::once(proc_macro2::TokenTree::Ident(new_ident)));
                             last_two_tokens.clear();
                             continue;
                         }
-                    },
+                    }
                     _ => {}
                 }
                 last_two_tokens.push_back(token.clone());
                 new_stream.extend(std::iter::once(token));
             }
-        } 
+        }
         clean_block(&mut new_stream, &block_stream, &fn_idents);
         //turn new stream back into block
         let new_block = syn::parse2::<syn::Block>(new_stream).expect("couldnt scrape block");
@@ -292,7 +310,6 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
         item_fn.block = new_block;
 
         impl_block.push(item_fn.clone());
-
 
         let fn_str = item_fn.sig.ident.to_string();
         if fn_str == "default_command_inner" || fn_str == "periodic_inner" {

@@ -97,8 +97,8 @@ impl TestSubsystem {
         .with_requirements(vec![Self::suid()])
         .build()
         .with_name("Activate Motor")
-    
     }
+
     pub fn cmd_activate_motor(&self) -> Command {
         CommandBuilder::new().init(
             || {

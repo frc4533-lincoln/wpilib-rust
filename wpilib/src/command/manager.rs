@@ -197,7 +197,7 @@ impl CommandManager {
             scheduler.orphaned_commands.insert(index);
         } else {
             for requirement in requirements {
-                //TODO: implement cancelation policy
+                //TODO: implement cancellation policy
                 scheduler.requirements.insert(requirement, index);
             }
         }

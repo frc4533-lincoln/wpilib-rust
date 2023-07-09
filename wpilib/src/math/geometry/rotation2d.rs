@@ -1,4 +1,5 @@
 use crate::math::units::angle::Radian;
+use crate::math::units::distance::Meter;
 
 use nalgebra::ComplexField;
 
@@ -24,13 +25,15 @@ impl Rotation2d {
             cos: value.cos().into(),
         }
     }
-    pub fn new_xy(x: f64, y: f64) -> Self {
+    pub fn new_xy(x: impl Into<Meter>, y: impl Into<Meter>) -> Self {
+        let x = x.into();
+        let y = y.into();
         let magnitude = x.hypot(y);
         let sin;
         let cos;
         if magnitude > 1e-6 {
-            sin = y / magnitude;
-            cos = x / magnitude;
+            sin = f64::from(y) / magnitude;
+            cos = f64::from(x) / magnitude;
         } else {
             sin = 0.0;
             cos = 1.0;
@@ -57,7 +60,7 @@ impl Rotation2d {
         Self::new_angle(f64::from(self.value) * scalar)
     }
     pub fn div(&self, scalar: f64) -> Self {
-        Self::times(&self, (1.0 / scalar))
+        Self::times(&self, 1.0 / scalar)
     }
     pub fn rotate_by(&self, other: &Self) -> Self {
         Self::new_xy(

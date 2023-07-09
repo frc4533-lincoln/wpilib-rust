@@ -3,6 +3,7 @@ use nalgebra::Translation2;
 
 use crate::math::units::distance::Meter;
 use crate::math::geometry::rotation2d::Rotation2d;
+use crate::math::util::math_util::MathUtil;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Translation2d {
@@ -98,4 +99,11 @@ impl Translation2d {
     // pub fn normalize(&mut self) {
     //     self.inner.vector.normalize_mut();
     // }
+
+    pub fn interpolate(&self, other: &Self, t: f64) -> Self {
+        Self::new_xy(
+            MathUtil::interpolate(f64::from(self.x), f64::from(other.x), t),
+            MathUtil::interpolate(f64::from(self.y), f64::from(other.y), t),
+        )
+    }
 }

@@ -1,5 +1,6 @@
 use crate::math::units::angle::Radian;
 use crate::math::units::distance::Meter;
+use crate::math::util::math_util::MathUtil;
 
 use nalgebra::ComplexField;
 
@@ -72,5 +73,9 @@ impl Rotation2d {
 
     pub fn get_tan(&self) -> f64 {
         self.sin / self.cos
+    }
+
+    pub fn interpolate(&self, end_value: &Self, t: f64) -> Self{
+        Self::plus(self, &end_value.minus(self).times(MathUtil::clamp_double(t, 0.0, 1.0)))
     }
 }

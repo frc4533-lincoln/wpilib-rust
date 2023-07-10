@@ -38,6 +38,7 @@ crate-type = ["cdylib"]
 
 [features]
 default = ["command", "rio"]
+test = ["command", "simulation"]
 
 command = []
 

@@ -37,6 +37,18 @@ pub mod robots;
 #[macro_use]
 pub mod macros;
 
+
+//re-exports for macros
+pub use parking_lot::Mutex as WpiMutex;
+pub mod re_exports {
+    pub use once_cell;
+    pub use parking_lot;
+    pub use nalgebra;
+    pub use simba;
+    pub use num;
+    pub use serde;
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EventTypes {
     Init,

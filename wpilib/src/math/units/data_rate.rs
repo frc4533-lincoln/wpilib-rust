@@ -1,6 +1,9 @@
 use crate::math::units::data::{Byte, Gigabyte, Kilobyte, Megabyte};
 use crate::math::units::time::Second;
 use wpilib_macros::{unit, unit_conversion};
+crate::crate_namespace!();
+
+
 
 unit!(BytesPerSecond, f64);
 unit!(KilobytesPerSecond, f64);

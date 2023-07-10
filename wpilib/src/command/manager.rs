@@ -228,6 +228,20 @@ impl CommandManager {
         let mut manager = MANAGER.lock();
         manager.cond_schedulers.clear();
     }
+
+    #[cfg(test)]
+    pub fn purge_state_test() {
+        let mut manager = MANAGER.lock();
+        manager.periodic_callbacks.clear();
+        manager.commands.clear();
+        manager.interrupt_state.clear();
+        manager.default_commands.clear();
+        manager.subsystem_to_default.clear();
+        manager.requirements.clear();
+        manager.initialized_commands.clear();
+        manager.orphaned_commands.clear();
+        manager.cond_schedulers.clear();
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

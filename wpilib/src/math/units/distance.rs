@@ -1,6 +1,8 @@
 use crate::math::units::linear_velocity::{FeetPerSecond, MeterPerSecond};
 use crate::math::units::time::Second;
 use wpilib_macros::{unit, unit_conversion};
+crate::crate_namespace!();
+
 
 unit!(Meter, f64);
 unit!(Feet, f64);

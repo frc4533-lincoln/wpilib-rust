@@ -182,7 +182,7 @@ impl CommandManager {
             self.orphaned_commands.insert(index);
         } else {
             for requirement in requirements {
-                //TODO: implement cancelation policy
+                //TODO: implement cancellation policy
                 self.requirements.insert(requirement, index);
             }
         }
@@ -197,7 +197,7 @@ impl CommandManager {
             scheduler.orphaned_commands.insert(index);
         } else {
             for requirement in requirements {
-                //TODO: implement cancelation policy
+                //TODO: implement cancellation policy
                 scheduler.requirements.insert(requirement, index);
             }
         }
@@ -291,16 +291,16 @@ impl ConditionalScheduler {
                     self.active_commands.insert(i, cmd_idx);
                 }
                 ConditionResponse::Continue => {
-                    if !self.active_commands.contains_key(&i) {
+                    self.active_commands.entry(i).or_insert_with(|| {
                         let command = cmd();
                         let cmd_idx = manager.cond_schedule(command);
                         println!("continue");
-                        self.active_commands.insert(i, cmd_idx);
-                    }
+                        cmd_idx
+                    });
                 }
                 ConditionResponse::Stop => {
                     if self.active_commands.contains_key(&i) {
-                        manager.interrupt_command(*self.active_commands.get(&i).unwrap());
+                        manager.interrupt_command(self.active_commands[&i]);
                         self.active_commands.remove(&i);
                     }
                 }
@@ -311,7 +311,7 @@ impl ConditionalScheduler {
         }
     }
 
-    pub fn add_cond(&mut self, cond: impl Condition, cmd: fn() -> Command) {
+    pub fn add_cond(&mut self, cond: &impl Condition, cmd: fn() -> Command) {
         self.conds.push((cond.clone_boxed(), cmd));
     }
 }

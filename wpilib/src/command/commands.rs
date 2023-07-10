@@ -27,7 +27,7 @@ pub trait CommandTrait {
     }
 
     fn get_name(&self) -> String {
-        String::from("unamed command")
+        String::from("unnamed command")
     }
 }
 
@@ -350,7 +350,7 @@ impl CommandTrait for SequentialCommand {
     fn end(&mut self, interrupted: bool) {
         if interrupted {
             if let Some(command) = self.commands.get_mut(self.current) {
-                command.end(true)
+                command.end(true);
             }
         }
     }
@@ -381,27 +381,27 @@ impl CommandTrait for ProxyCommand {
         if self.command.is_none() {
             self.command = Some(Box::new((self.command_supplier)()));
         }
-        self.command.as_mut().unwrap().init();
+        self.command.as_mut().expect("Command Empty").init();
     }
 
     fn periodic(&mut self) {
-        self.command.as_mut().unwrap().periodic();
+        self.command.as_mut().expect("Command Empty").periodic();
     }
 
     fn end(&mut self, interrupted: bool) {
-        self.command.as_mut().unwrap().end(interrupted);
+        self.command.as_mut().expect("Command Empty").end(interrupted);
     }
 
     fn is_finished(&mut self) -> bool {
-        self.command.as_mut().unwrap().is_finished()
+        self.command.as_mut().expect("Command Empty").is_finished()
     }
 
     fn get_requirements(&self) -> Vec<u8> {
-        self.command.as_ref().unwrap().get_requirements()
+        self.command.as_ref().expect("Command Empty").get_requirements()
     }
 
     fn get_name(&self) -> String {
-        self.command.as_ref().unwrap().get_name()
+        self.command.as_ref().expect("Command Empty").get_name()
     }
 }
 impl Debug for ProxyCommand {
@@ -432,7 +432,7 @@ impl CommandTrait for WaitCommand {
     fn end(&mut self, _interrupted: bool) {}
 
     fn is_finished(&mut self) -> bool {
-        self.start_instant.unwrap().elapsed() >= self.duration
+        self.start_instant.expect("Command Empty").elapsed() >= self.duration
     }
 
     fn get_requirements(&self) -> Vec<u8> {

@@ -6,11 +6,8 @@ use std::collections::VecDeque;
 use std::sync::atomic::AtomicU8;
 
 fn is_non_static_method(method: &syn::ImplItemFn) -> bool {
-    if method.sig.inputs.len() > 0 {
-        match method.sig.inputs.first().unwrap() {
-            syn::FnArg::Receiver(_) => true,
-            _ => false,
-        }
+    if !method.sig.inputs.is_empty() {
+        matches!(method.sig.inputs.first().unwrap(), syn::FnArg::Receiver(_))
     } else {
         false
     }
@@ -26,7 +23,7 @@ fn method_takes_only_self_ref(method: &syn::ImplItemFn) -> bool {
             .sig
             .inputs
             .first()
-            .expect(format!("expected a receiver as first arg on {}", name).as_str())
+            .unwrap_or_else(|| panic!("expected a receiver as first arg on {}", name))
         {
             syn::FnArg::Receiver(receiver) => {
                 receiver.reference.is_some() && receiver.mutability.is_none()
@@ -35,19 +32,12 @@ fn method_takes_only_self_ref(method: &syn::ImplItemFn) -> bool {
         }
 }
 fn is_public_method(method: &syn::ImplItemFn) -> bool {
-    match method.vis {
-        syn::Visibility::Public(_) => true,
-        _ => false,
-    }
+    matches!(method.vis, syn::Visibility::Public(_))
 }
 fn method_return_type_is(method: &syn::ImplItemFn, ty: &str) -> bool {
     match method.sig.output {
         syn::ReturnType::Default => {
-            if ty == "" {
-                true
-            } else {
-                false
-            }
+            ty.is_empty()
         }
         syn::ReturnType::Type(_, ref t) => match **t {
             syn::Type::Path(ref path) => path.path.segments.last().unwrap().ident == ty,

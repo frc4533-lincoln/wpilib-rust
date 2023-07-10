@@ -1,4 +1,4 @@
-use super::manager::*;
+use super::manager::{Condition, ConditionResponse};
 use std::sync::Arc;
 #[derive(Clone)]
 pub struct OnTrue<T>
@@ -15,7 +15,7 @@ where
 {
     fn get_condition(&mut self) -> ConditionResponse {
         let state = (self.function)();
-        if state == true && self.last_state == false {
+        if state && !self.last_state {
             self.last_state = state;
             return ConditionResponse::Start;
         }
@@ -26,7 +26,7 @@ where
     fn clone_boxed(&self) -> Box<dyn Condition> {
         Box::new(Self {
             function: self.function.clone(),
-            last_state: self.last_state.clone(),
+            last_state: self.last_state,
         })
     }
 }
@@ -57,13 +57,13 @@ where
 {
     fn get_condition(&mut self) -> ConditionResponse {
         let state = (self.function)();
-        if state == true && self.last_state == false {
+        if state && !self.last_state {
             self.last_state = state;
             return ConditionResponse::Start;
-        } else if state == true {
+        } else if state {
             self.last_state = state;
             return ConditionResponse::Continue;
-        } else if state == false && self.last_state == true {
+        } else if !state && self.last_state {
             self.last_state = state;
             return ConditionResponse::Stop;
         }
@@ -75,7 +75,7 @@ where
     fn clone_boxed(&self) -> Box<dyn Condition> {
         Box::new(Self {
             function: self.function.clone(),
-            last_state: self.last_state.clone(),
+            last_state: self.last_state,
         })
     }
 }

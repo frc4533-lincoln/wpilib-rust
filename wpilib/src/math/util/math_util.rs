@@ -16,7 +16,7 @@ impl MathUtil {
   pub fn apply_deadband(value: f64, deadband: f64, max_magnitude: f64) -> f64{
     if ComplexField::abs(value) > deadband {
         if max_magnitude / deadband > 1.0e12 {    
-            if value > 0.0 { value - deadband; } else { value + deadband; }
+            if value > 0.0 { return value - deadband; } else { return value + deadband; }
         }
         if value > 0.0 {
             max_magnitude * (value - deadband) / (max_magnitude - deadband)

@@ -1,4 +1,5 @@
 use wpilib_macros::{unit, unit_conversion};
+crate::crate_namespace!();
 
 unit!(KilogramSquareMeter, f64);
 unit!(PoundSquareFoot, f64);

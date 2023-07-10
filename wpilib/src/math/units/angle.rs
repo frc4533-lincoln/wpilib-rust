@@ -4,6 +4,8 @@ use crate::math::units::angular_velocity::{
 use crate::math::units::time::{Minute, Second};
 use wpilib_macros::{unit, unit_conversion, unit_dimensional_analysis};
 
+crate::crate_namespace!();
+
 unit!(Degree, f64);
 unit!(Radian, f64);
 unit!(Rotation, f64);

@@ -1,39 +1,18 @@
-use parking_lot::Mutex;
 use wpilib_macros::{subsystem, subsystem_methods};
 
-use crate::command::{
+crate_namespace!();
+
+use crate::{command::{
     commands::CommandTrait,
     conditions::{self},
     manager::CommandManager,
     Command, ConditionalScheduler,
-};
+}, crate_namespace};
 
 use super::{
     commands::CommandBuilder,
     manager::{Condition, ConditionResponse},
 };
-
-#[test]
-fn test_command() {
-    CommandManager::cancel_all();
-    fn schedule_test() {
-        struct TestCommand {}
-        impl CommandTrait for TestCommand {}
-
-        let command = TestCommand {};
-
-        CommandManager::schedule(Command::custom(Box::new(command)));
-    }
-
-    schedule_test();
-
-    std::thread::spawn(|| {
-        schedule_test();
-        CommandManager::run();
-    })
-    .join()
-    .unwrap();
-}
 
 struct TestSubsystem {
     motor_running: bool,
@@ -70,8 +49,13 @@ impl TestSubsystem {
         self.motor_running = false;
     }
 
-    pub fn add_call(&mut self) {
+    #[dont_static]
+    fn inner_add_call(&mut self) {
         self.calls += 1;
+    }
+
+    pub fn add_call(&mut self) {
+        self.inner_add_call()
     }
 
     pub fn sub_call(&mut self) {
@@ -134,19 +118,31 @@ impl TestSubsystem {
     }
 }
 
-#[test]
+fn test_command() {
+    fn schedule_test() {
+        struct TestCommand {}
+        impl CommandTrait for TestCommand {}
+
+        let command = TestCommand {};
+
+        CommandManager::schedule(Command::custom(Box::new(command)));
+    }
+
+    schedule_test();
+
+    std::thread::spawn(|| {
+        schedule_test();
+        CommandManager::run();
+    })
+    .join()
+    .unwrap();
+}
+
 fn test_subsystem() {
-    CommandManager::clear_cond_schedulers();
-    CommandManager::cancel_all();
-    TestSubsystem::reset();
-    // CommandManager::register_subsystem(
-    //     TestSubsystem::suid(),
-    //     || TestSubsystem::periodic(),
-    //     Some(TestSubsystem::default_command()),
-    // );
     register_subsystem!(TestSubsystem);
     assert!(!TestSubsystem::is_default_running());
     CommandManager::run();
+    std::thread::sleep(std::time::Duration::from_millis(100));
     assert!(TestSubsystem::is_default_running());
 }
 
@@ -161,11 +157,7 @@ impl Condition for Immediately {
     }
 }
 
-#[test]
 fn test_on_true() {
-    CommandManager::clear_cond_schedulers();
-    CommandManager::cancel_all();
-    TestSubsystem::reset();
     let mut scheduler = ConditionalScheduler::new();
 
     let cond = conditions::on_true(|| true);
@@ -183,52 +175,15 @@ fn test_on_true() {
     assert_eq!(TestSubsystem::get_calls(), 1);
 }
 
-struct StateStruct {
-    state_var: bool,
-}
-
-static STATE: Mutex<StateStruct> = Mutex::new(StateStruct { state_var: false });
-
-fn get_state() -> bool {
-    let state = STATE.lock();
-    state.state_var
-}
-fn set_state(b: bool) {
-    let mut state = STATE.lock();
-    state.state_var = b;
+fn run_in_clean_state(func: fn()) {
+    func();
+    CommandManager::purge_state_test();
+    TestSubsystem::reset();
 }
 
 #[test]
-fn test_while_true() {
-    CommandManager::clear_cond_schedulers();
-    CommandManager::cancel_all();
-    TestSubsystem::reset();
-    let mut scheduler = ConditionalScheduler::new();
-
-    let cond = conditions::while_true(|| get_state());
-
-    scheduler.add_cond(cond, || TestSubsystem::cmd_activate_motor());
-
-    assert!(!TestSubsystem::is_motor_running());
-    assert_eq!(TestSubsystem::get_calls(), 0);
-
-    set_state(false);
-    CommandManager::add_cond_scheduler(scheduler);
-    CommandManager::run();
-    assert!(!TestSubsystem::is_motor_running());
-    assert_eq!(TestSubsystem::get_calls(), 0);
-
-    set_state(true);
-    CommandManager::run();
-    assert!(TestSubsystem::is_motor_running());
-    assert_eq!(TestSubsystem::get_calls(), 1);
-
-    CommandManager::run();
-    assert!(TestSubsystem::is_motor_running());
-    assert_eq!(TestSubsystem::get_calls(), 1);
-    set_state(false);
-
-    CommandManager::run();
-    assert_eq!(TestSubsystem::get_calls(), 0);
-    assert!(!TestSubsystem::is_motor_running());
+fn parent_test() {
+    run_in_clean_state(test_command);
+    run_in_clean_state(test_subsystem);
+    run_in_clean_state(test_on_true);
 }

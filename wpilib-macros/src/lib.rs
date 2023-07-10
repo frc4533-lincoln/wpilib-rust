@@ -76,7 +76,10 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
             let mut attrs = method.attrs.iter().clone();
 
             //for ignor attributes just skip the function
-            if attrs.clone().any(|attr| attr.path().is_ident("ignore")) {
+            if attrs.clone().any(|attr| attr.path().is_ident("dont_static")) {
+                let mut new_method = method.clone();
+                new_method.attrs = Vec::new();
+                impl_block.push(new_method);
                 continue;
             }
 
@@ -371,7 +374,9 @@ pub fn subsystem(input: TokenStream) -> TokenStream {
 
     // create a static variable for the struct
     let static_variable = quote! {
-        static #struct_name_caps: once_cell::sync::Lazy<parking_lot::Mutex<#struct_name>> = once_cell::sync::Lazy::new(|| parking_lot::Mutex::new(#struct_name::__new()));
+        use wpilib::re_exports::parking_lot as p_l;
+        use wpilib::re_exports::once_cell as o_c;
+        static #struct_name_caps: o_c::sync::Lazy<p_l::Mutex<#struct_name>> = o_c::sync::Lazy::new(|| p_l::Mutex::new(#struct_name::__new()));
         static SUID: u8 = #suid_count;
     };
     output.extend(static_variable);
@@ -379,7 +384,7 @@ pub fn subsystem(input: TokenStream) -> TokenStream {
     //add a static fn to get a &mut self from static variable mutex
     let static_getter = quote!(
         impl #struct_name {
-            pub fn get_static() -> parking_lot::MutexGuard<'static, #struct_name> {
+            pub fn get_static() -> p_l::MutexGuard<'static, #struct_name> {
                 let mut this = #struct_name_caps.lock();
                 this
             }
@@ -693,7 +698,7 @@ pub fn unit(input: TokenStream) -> TokenStream {
 
     //implement num traits for the struct
     let impl_num_traits_block = quote! {
-        impl num::Zero for #struct_name {
+        impl wpilib::re_exports::num::Zero for #struct_name {
             fn zero() -> Self {
                 Self {
                     value: #r#type::zero(),
@@ -703,7 +708,7 @@ pub fn unit(input: TokenStream) -> TokenStream {
                 self.value.is_zero()
             }
         }
-        impl num::One for #struct_name {
+        impl wpilib::re_exports::num::One for #struct_name {
             fn one() -> Self {
                 Self {
                     value: #r#type::one(),
@@ -713,22 +718,22 @@ pub fn unit(input: TokenStream) -> TokenStream {
                 self.value.is_one()
             }
         }
-        impl num::Num for #struct_name {
-            type FromStrRadixErr = <#r#type as num::Num>::FromStrRadixErr;
+        impl wpilib::re_exports::num::Num for #struct_name {
+            type FromStrRadixErr = <#r#type as wpilib::re_exports::num::Num>::FromStrRadixErr;
             fn from_str_radix(str: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
                 Ok(Self {
                     value: #r#type::from_str_radix(str, radix)?,
                 })
             }
         }
-        // impl num::NumCast for #struct_name {
-        //     fn from<T: num::ToPrimitive>(n: T) -> Option<Self> {
+        // impl wpilib::re_exports::num::NumCast for #struct_name {
+        //     fn from<T: wpilib::re_exports::num::ToPrimitive>(n: T) -> Option<Self> {
         //         Some(Self {
         //             value: #r#type::from(n)?,
         //         })
         //     }
         // }
-        impl num::ToPrimitive for #struct_name {
+        impl wpilib::re_exports::num::ToPrimitive for #struct_name {
             fn to_i64(&self) -> Option<i64> {
                 self.value.to_i64()
             }
@@ -736,7 +741,7 @@ pub fn unit(input: TokenStream) -> TokenStream {
                 self.value.to_u64()
             }
         }
-        impl num::FromPrimitive for #struct_name {
+        impl wpilib::re_exports::num::FromPrimitive for #struct_name {
             fn from_i64(n: i64) -> Option<Self> {
                 Some(Self {
                     value: #r#type::from_i64(n)?,
@@ -933,13 +938,13 @@ pub fn unit(input: TokenStream) -> TokenStream {
 
     //implement serde for the struct
     let impl_serde_block = quote! {
-        impl serde::Serialize for #struct_name {
-            fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        impl wpilib::re_exports::serde::Serialize for #struct_name {
+            fn serialize<S: wpilib::re_exports::serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
                 self.value.serialize(serializer)
             }
         }
-        impl<'de> serde::Deserialize<'de> for #struct_name {
-            fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        impl<'de> wpilib::re_exports::serde::Deserialize<'de> for #struct_name {
+            fn deserialize<D: wpilib::re_exports::serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
                 #r#type::deserialize(deserializer).map(|value| Self { value })
             }
         }
@@ -971,7 +976,7 @@ pub fn unit(input: TokenStream) -> TokenStream {
     };
 
     let impl_simd_block = quote! {
-        impl nalgebra::SimdValue for #struct_name {
+        impl wpilib::re_exports::nalgebra::SimdValue for #struct_name {
             type Element = #struct_name;
             type SimdBool = bool;
 
@@ -1024,22 +1029,22 @@ pub fn unit(input: TokenStream) -> TokenStream {
                 f(self, b)
             }
         }
-        impl nalgebra::Field for #struct_name {}
-        impl simba::scalar::SubsetOf<#struct_name> for #struct_name {
+        impl wpilib::re_exports::nalgebra::Field for #struct_name {}
+        impl wpilib::re_exports::simba::scalar::SubsetOf<#struct_name> for #struct_name {
             #[inline]
             fn is_in_subset(_element: &Self) -> bool {true}
             fn to_superset(&self) -> #struct_name {*self}
             fn from_superset(element: &#struct_name) -> Option<Self> {Some(*element)}
             fn from_superset_unchecked(element: &#struct_name) -> Self {*element}
         }
-        impl simba::scalar::SubsetOf<#struct_name> for f64 {
+        impl wpilib::re_exports::simba::scalar::SubsetOf<#struct_name> for f64 {
             #[inline]
             fn is_in_subset(_element: &#struct_name) -> bool {true}
             fn to_superset(&self) -> #struct_name {#struct_name::new(*self)}
             fn from_superset(element: &#struct_name) -> Option<Self> {Some(element.value as f64)}
             fn from_superset_unchecked(element: &#struct_name) -> Self {element.value as f64}
         }
-        impl nalgebra::ComplexField for #struct_name {
+        impl wpilib::re_exports::nalgebra::ComplexField for #struct_name {
             type RealField = #r#type;
             #[inline]
             fn is_finite(&self) -> bool {self.value.is_finite()}
@@ -1047,216 +1052,216 @@ pub fn unit(input: TokenStream) -> TokenStream {
             fn try_sqrt(self) -> Option<Self> {Some(#struct_name::new(self.value.sqrt()))}
             #[inline]
             fn abs(self) -> Self::RealField {
-                nalgebra::ComplexField::abs(#r#type::from(self.value))
+                wpilib::re_exports::nalgebra::ComplexField::abs(#r#type::from(self.value))
             }
             #[inline]
             fn acos(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::acos(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::acos(#r#type::from(self.value)))
             }
             #[inline]
             fn acosh(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::acosh(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::acosh(#r#type::from(self.value)))
             }
             #[inline]
             fn asin(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::asin(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::asin(#r#type::from(self.value)))
             }
             #[inline]
             fn asinh(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::asinh(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::asinh(#r#type::from(self.value)))
             }
             #[inline]
             fn atan(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::atan(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::atan(#r#type::from(self.value)))
             }
             #[inline]
             fn atanh(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::atanh(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::atanh(#r#type::from(self.value)))
             }
             #[inline]
             fn cos(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::cos(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::cos(#r#type::from(self.value)))
             }
             #[inline]
             fn cosh(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::cosh(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::cosh(#r#type::from(self.value)))
             }
             #[inline]
             fn exp(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::exp(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::exp(#r#type::from(self.value)))
             }
             #[inline]
             fn ln(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::ln(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::ln(#r#type::from(self.value)))
             }
             #[inline]
             fn log(self, base: #r#type) -> Self {
-                #struct_name::new(nalgebra::ComplexField::log(#r#type::from(self.value), base))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::log(#r#type::from(self.value), base))
             }
             #[inline]
             fn powf(self, n: Self::RealField) -> Self {
-                #struct_name::new(nalgebra::ComplexField::powf(#r#type::from(self.value), n))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::powf(#r#type::from(self.value), n))
             }
             #[inline]
             fn powi(self, n: i32) -> Self {
-                #struct_name::new(nalgebra::ComplexField::powi(#r#type::from(self.value), n))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::powi(#r#type::from(self.value), n))
             }
             #[inline]
             fn recip(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::recip(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::recip(#r#type::from(self.value)))
             }
             #[inline]
             fn sin(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::sin(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::sin(#r#type::from(self.value)))
             }
             #[inline]
             fn sinh(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::sinh(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::sinh(#r#type::from(self.value)))
             }
             #[inline]
             fn sqrt(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::sqrt(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::sqrt(#r#type::from(self.value)))
             }
             #[inline]
             fn tan(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::tan(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::tan(#r#type::from(self.value)))
             }
             #[inline]
             fn tanh(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::tanh(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::tanh(#r#type::from(self.value)))
             }
             #[inline]
             fn argument(self) -> Self::RealField {
-                nalgebra::ComplexField::argument(#r#type::from(self.value))
+                wpilib::re_exports::nalgebra::ComplexField::argument(#r#type::from(self.value))
             }
             #[inline]
             fn modulus(self) -> Self::RealField {
-                nalgebra::ComplexField::modulus(#r#type::from(self.value))
+                wpilib::re_exports::nalgebra::ComplexField::modulus(#r#type::from(self.value))
             }
             #[inline]
             fn to_exp(self) -> (Self::RealField, Self) {
-                let (r, theta) = nalgebra::ComplexField::to_exp(#r#type::from(self.value));
+                let (r, theta) = wpilib::re_exports::nalgebra::ComplexField::to_exp(#r#type::from(self.value));
                 (r, #struct_name::new(theta))
             }
             #[inline]
             fn cbrt(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::cbrt(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::cbrt(#r#type::from(self.value)))
             }
             #[inline]
             fn hypot(self, other: Self) -> Self::RealField {
-                nalgebra::ComplexField::hypot(#r#type::from(self.value), #r#type::from(other.value))
+                wpilib::re_exports::nalgebra::ComplexField::hypot(#r#type::from(self.value), #r#type::from(other.value))
             }
             #[inline]
             fn ceil(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::ceil(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::ceil(#r#type::from(self.value)))
             }
             #[inline]
             fn floor(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::floor(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::floor(#r#type::from(self.value)))
             }
             #[inline]
             fn round(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::round(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::round(#r#type::from(self.value)))
             }
             #[inline]
             fn trunc(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::trunc(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::trunc(#r#type::from(self.value)))
             }
             #[inline]
             fn conjugate(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::conjugate(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::conjugate(#r#type::from(self.value)))
             }
             #[inline]
             fn cosc(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::cosc(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::cosc(#r#type::from(self.value)))
             }
             #[inline]
             fn sinhc(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::sinhc(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::sinhc(#r#type::from(self.value)))
             }
             #[inline]
             fn signum(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::signum(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::signum(#r#type::from(self.value)))
             }
             #[inline]
             fn coshc(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::coshc(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::coshc(#r#type::from(self.value)))
             }
             #[inline]
             fn exp2(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::exp2(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::exp2(#r#type::from(self.value)))
             }
             #[inline]
             fn exp_m1(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::exp_m1(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::exp_m1(#r#type::from(self.value)))
             }
             #[inline]
             fn ln_1p(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::ln_1p(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::ln_1p(#r#type::from(self.value)))
             }
             #[inline]
             fn log10(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::log10(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::log10(#r#type::from(self.value)))
             }
             #[inline]
             fn fract(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::fract(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::fract(#r#type::from(self.value)))
             }
             #[inline]
             fn from_real(re: Self::RealField) -> Self {
-                #struct_name::new(nalgebra::ComplexField::from_real(re))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::from_real(re))
             }
             #[inline]
             fn imaginary(self) -> Self::RealField {
-                nalgebra::ComplexField::imaginary(#r#type::from(self.value))
+                wpilib::re_exports::nalgebra::ComplexField::imaginary(#r#type::from(self.value))
             }
             #[inline]
             fn log2(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::log2(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::log2(#r#type::from(self.value)))
             }
             #[inline]
             fn modulus_squared(self) -> Self::RealField {
-                nalgebra::ComplexField::modulus_squared(#r#type::from(self.value))
+                wpilib::re_exports::nalgebra::ComplexField::modulus_squared(#r#type::from(self.value))
             }
             #[inline]
             fn mul_add(self,a:Self,b:Self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::mul_add(#r#type::from(self.value),#r#type::from(a.value),#r#type::from(b.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::mul_add(#r#type::from(self.value),#r#type::from(a.value),#r#type::from(b.value)))
             }
             #[inline]
             fn norm1(self) -> Self::RealField {
-                nalgebra::ComplexField::norm1(#r#type::from(self.value))
+                wpilib::re_exports::nalgebra::ComplexField::norm1(#r#type::from(self.value))
             }
             #[inline]
             fn powc(self,n:Self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::powc(#r#type::from(self.value),#r#type::from(n.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::powc(#r#type::from(self.value),#r#type::from(n.value)))
             }
             #[inline]
             fn real(self) -> Self::RealField {
-                nalgebra::ComplexField::real(#r#type::from(self.value))
+                wpilib::re_exports::nalgebra::ComplexField::real(#r#type::from(self.value))
             }
             #[inline]
             fn scale(self,factor:Self::RealField) -> Self {
-                #struct_name::new(nalgebra::ComplexField::scale(#r#type::from(self.value),factor))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::scale(#r#type::from(self.value),factor))
             }
             #[inline]
             fn sin_cos(self) -> (Self,Self) {
-                let (s,c) = nalgebra::ComplexField::sin_cos(#r#type::from(self.value));
+                let (s,c) = wpilib::re_exports::nalgebra::ComplexField::sin_cos(#r#type::from(self.value));
                 (#struct_name::new(s),#struct_name::new(c))
             }
             #[inline]
             fn sinc(self) -> Self {
-                #struct_name::new(nalgebra::ComplexField::sinc(#r#type::from(self.value)))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::sinc(#r#type::from(self.value)))
             }
             fn sinh_cosh(self) -> (Self,Self) {
-                let (s,c) = nalgebra::ComplexField::sinh_cosh(#r#type::from(self.value));
+                let (s,c) = wpilib::re_exports::nalgebra::ComplexField::sinh_cosh(#r#type::from(self.value));
                 (#struct_name::new(s),#struct_name::new(c))
             }
             fn to_polar(self) -> (Self::RealField,Self::RealField) {
-                let (r,theta) = nalgebra::ComplexField::to_polar(#r#type::from(self.value));
+                let (r,theta) = wpilib::re_exports::nalgebra::ComplexField::to_polar(#r#type::from(self.value));
                 (r,theta)
             }
             fn unscale(self,factor:Self::RealField) -> Self {
-                #struct_name::new(nalgebra::ComplexField::unscale(#r#type::from(self.value),factor))
+                #struct_name::new(wpilib::re_exports::nalgebra::ComplexField::unscale(#r#type::from(self.value),factor))
             }
         }
     };

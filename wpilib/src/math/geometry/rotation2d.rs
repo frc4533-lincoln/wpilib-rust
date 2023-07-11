@@ -49,10 +49,10 @@ impl Rotation2d {
     
     
     pub fn plus(&self, other: &Self) -> Self {
-        Self::rotate_by(&self, other)
+        self.rotate_by(other)
     }
     pub fn minus(&self, other: &Self) -> Self {
-        Self::rotate_by(&self, &other.unary_minus())
+        self.rotate_by(&other.unary_minus())
     }
     pub fn unary_minus(&self) -> Self {
         Self::new_angle(-self.value)
@@ -61,7 +61,7 @@ impl Rotation2d {
         Self::new_angle(f64::from(self.value) * scalar)
     }
     pub fn div(&self, scalar: f64) -> Self {
-        Self::times(&self, 1.0 / scalar)
+        self.times(1.0 / scalar)
     }
     pub fn rotate_by(&self, other: &Self) -> Self {
         Self::new_xy(
@@ -76,6 +76,6 @@ impl Rotation2d {
     }
 
     pub fn interpolate(&self, end_value: &Self, t: f64) -> Self{
-        Self::plus(self, &end_value.minus(self).times(MathUtil::clamp_double(t, 0.0, 1.0)))
+        self.plus(&end_value.minus(self).times(MathUtil::clamp_double(t, 0.0, 1.0)))
     }
 }

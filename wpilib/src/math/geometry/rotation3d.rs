@@ -28,10 +28,10 @@ impl Rotation3d {
             q: Quaternion::normalize(&q) 
         }
     }
-    pub fn new_euler_angles(roll: Radian, pitch: Radian, yaw: Radian) -> Self {
-        let roll = f64::from(roll);
-        let pitch = f64::from(pitch);
-        let yaw = f64::from(yaw);
+    pub fn new_euler_angles(roll: impl Into <Radian>, pitch: impl Into<Radian>, yaw: impl Into<Radian>) -> Self {
+        let roll = f64::from(roll.into());
+        let pitch = f64::from(pitch.into());
+        let yaw = f64::from(yaw.into());
         
         let cr = ComplexField::cos(roll * 0.5);
         let sr = ComplexField::sin(roll * 0.5);
@@ -59,8 +59,9 @@ impl Rotation3d {
     //     Self::new_first_last
     // }
 
-    pub fn new_axis_angle(axis: Vector3<f64>, angle: Radian) -> Self {
+    pub fn new_axis_angle(axis: Vector3<f64>, angle: impl Into<Radian>) -> Self {
         let norm = axis.norm();
+        let angle = angle.into();
         if norm == 0.0 {
             return Self::new();
         }
@@ -143,12 +144,12 @@ impl Rotation3d {
         if self.q.w >= 0.0 {
             Self::new_axis_angle(
                 Vector3::new(self.q.i, self.q.j, self.q.k),
-                (2.0 * scalar * ComplexField::acos(self.q.w)).into()  
+                2.0 * scalar * ComplexField::acos(self.q.w)  
             )
         } else {
             Self::new_axis_angle(
                 Vector3::new(-self.q.i, -self.q.j, -self.q.k),
-                (2.0 * scalar * ComplexField::acos(-self.q.w)).into()
+                2.0 * scalar * ComplexField::acos(-self.q.w)
             )
         }
     }
@@ -215,7 +216,7 @@ impl Rotation3d {
 
 impl From<Rotation2d> for Rotation3d {
     fn from(r: Rotation2d) -> Self {
-        Self::new_euler_angles(0.0.into(), 0.0.into(), r.value)
+        Self::new_euler_angles(0.0, 0.0, r.value)
     }
 }
 

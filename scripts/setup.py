@@ -1,6 +1,6 @@
-
-#get cwd
+# get cwd
 import os
+
 cwd = os.getcwd()
 
 # write to file

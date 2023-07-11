@@ -1,4 +1,5 @@
 use crate::math::controllers::controller::Controller;
+use crate::math::units::time::Millisecond;
 
 #[derive(Debug, Clone, Copy)]
 pub struct PIDController {
@@ -44,14 +45,14 @@ impl PIDController {
 }
 
 impl Controller for PIDController {
-    fn calculate(&mut self, measurement: f64, period: f64) -> f64 {
+    fn calculate(&mut self, measurement: f64, period: impl Into<Millisecond>) -> f64 {
         if !self.enabled {
             return 0.0;
         }
         let error = self.set_point - measurement;
-        self.total_error += error * period;
+        self.total_error += error * period.into().value();
         self.total_error = self.total_error.clamp(self.i_min, self.i_max);
-        let d_error = (error - self.prev_error) / period;
+        let d_error = (error - self.prev_error) / period.into().value();
         self.prev_error = error;
         let p = self.k_p * error;
         let i = self.k_i * self.total_error;

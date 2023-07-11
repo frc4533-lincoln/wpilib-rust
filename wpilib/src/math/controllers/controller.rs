@@ -1,6 +1,8 @@
+use crate::math::units::time::Millisecond;
+
 pub trait Controller {
     /// Returns the control output.
-    fn calculate(&mut self, measurement: f64, period: f64) -> f64;
+    fn calculate(&mut self, measurement: f64, period: impl Into<Millisecond>) -> f64;
     /// Sets the set point.
     fn set_set_point(&mut self, set_point: f64);
     /// Enables or disables the controller.

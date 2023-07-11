@@ -4,16 +4,16 @@ crate::crate_namespace!();
 unit!(Hour, f64);
 unit!(Minute, f64);
 unit!(Second, f64);
-unit!(Milisecond, f64);
+unit!(Millisecond, f64);
 unit!(Microsecond, i64);
 
-unit_conversion!(Second f64, Milisecond f64, second_to_millisecond);
+unit_conversion!(Second f64, Millisecond f64, second_to_millisecond);
 unit_conversion!(Second f64, Microsecond i64, second_to_microsecond);
-unit_conversion!(Milisecond f64, Microsecond i64, millisecond_to_microsecond);
+unit_conversion!(Millisecond f64, Microsecond i64, millisecond_to_microsecond);
 unit_conversion!(Hour f64, Second f64, hour_to_second);
 unit_conversion!(Minute f64, Second f64, minute_to_second);
 unit_conversion!(Hour f64, Minute f64, hour_to_minute);
-unit_conversion!(Minute f64, Milisecond f64, minute_to_millisecond);
+unit_conversion!(Minute f64, Millisecond f64, minute_to_millisecond);
 unit_conversion!(Minute f64, Microsecond i64, minute_to_microsecond);
 
 #[must_use]

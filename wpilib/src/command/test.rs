@@ -2,12 +2,15 @@ use wpilib_macros::{subsystem, subsystem_methods};
 
 crate_namespace!();
 
-use crate::{command::{
-    commands::CommandTrait,
-    conditions::{self},
-    manager::CommandManager,
-    Command, ConditionalScheduler,
-}, crate_namespace};
+use crate::{
+    command::{
+        commands::CommandTrait,
+        conditions::{self},
+        manager::CommandManager,
+        Command, ConditionalScheduler,
+    },
+    crate_namespace,
+};
 
 use super::{
     commands::CommandBuilder,

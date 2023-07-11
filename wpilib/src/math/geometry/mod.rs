@@ -12,23 +12,28 @@ impl Rotation2d {
             inner: angle.into(),
         }
     }
-    #[must_use] pub const fn angle(&self) -> Radian {
+    #[must_use]
+    pub const fn angle(&self) -> Radian {
         self.inner
     }
-    #[must_use] pub fn plus(&self, other: &Self) -> Self {
+    #[must_use]
+    pub fn plus(&self, other: &Self) -> Self {
         Self {
             inner: self.inner + other.inner,
         }
     }
-    #[must_use] pub fn minus(&self, other: &Self) -> Self {
+    #[must_use]
+    pub fn minus(&self, other: &Self) -> Self {
         Self {
             inner: self.inner - other.inner,
         }
     }
-    #[must_use] pub fn inverse(&self) -> Self {
+    #[must_use]
+    pub fn inverse(&self) -> Self {
         Self { inner: -self.inner }
     }
-    #[must_use] pub fn rotate_by(&self, other: &Self) -> Self {
+    #[must_use]
+    pub fn rotate_by(&self, other: &Self) -> Self {
         Self {
             inner: self.inner + other.inner,
         }
@@ -46,13 +51,16 @@ impl Translation2d {
             inner: Translation2::new(x.into(), y.into()),
         }
     }
-    #[must_use] pub fn x(&self) -> Meter {
+    #[must_use]
+    pub fn x(&self) -> Meter {
         self.inner.x
     }
-    #[must_use] pub fn y(&self) -> Meter {
+    #[must_use]
+    pub fn y(&self) -> Meter {
         self.inner.y
     }
-    #[must_use] pub fn strength(&self) -> Meter {
+    #[must_use]
+    pub fn strength(&self) -> Meter {
         self.inner.vector.norm().into()
     }
     pub fn normalize(&mut self) {

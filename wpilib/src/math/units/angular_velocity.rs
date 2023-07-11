@@ -1,8 +1,6 @@
 use wpilib_macros::{unit, unit_conversion};
 crate::crate_namespace!();
 
-
-
 unit!(DegreePerSecond, f64);
 unit!(RadianPerSecond, f64);
 unit!(RotationPerSecond, f64);

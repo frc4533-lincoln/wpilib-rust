@@ -162,7 +162,7 @@ fn test_on_true() {
 
     let cond = conditions::on_true(|| true);
 
-    scheduler.add_cond(cond, || TestSubsystem::cmd_activate_motor());
+    scheduler.add_cond(&cond, || TestSubsystem::cmd_activate_motor());
 
     assert!(!TestSubsystem::is_motor_running());
     assert_eq!(TestSubsystem::get_calls(), 0);

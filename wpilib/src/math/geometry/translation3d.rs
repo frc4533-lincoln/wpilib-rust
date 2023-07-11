@@ -1,9 +1,11 @@
 use nalgebra::Quaternion;
 use nalgebra::ComplexField;
 
-use crate::math::geometry::Rotation3d;
-use crate::math::util::MathUtil;
+use crate::math::units::distance::Meter;
+use crate::math::util::math_util::MathUtil;
 
+use crate::math::geometry::Rotation3d;
+use crate::math::geometry::Translation2d;
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Translation3d {
     pub x: Meter,
@@ -24,8 +26,8 @@ impl Translation3d {
         }
     }
 
-    pub fn new_dist_angle(dist: impl Into<Meter>, angle: impl Into<Radian>) -> Self {
-        let rectangle = Self::Translation3d(distance, 0.0, 0.0).rotate_by(angle);
+    pub fn new_dist_angle(dist: impl Into<Meter>, angle: Rotation3d) -> Self {
+        let rectangle = Self::new_xyz(dist, 0.0, 0.0).rotate_by(&angle);
         Self{
             x: rectangle.x,
             y: rectangle.y,
@@ -35,17 +37,24 @@ impl Translation3d {
 
     pub fn get_distance(&self, other: &Self) -> Meter {
         ComplexField::sqrt(
-            (other.x - self.x).pow(2) + (other.y - self.y).pow(2) + (other.z - self.z).pow(2)
+            (other.x - self.x).square() + (other.y - self.y).square() + (other.z - self.z).square()
         )
     }
 
     pub fn get_norm(&self) -> Meter {
-        ComplexField::sqrt(self.x.pow(2) + self.y.pow(2) + self.z.pow(2))
+        ComplexField::sqrt(self.x.square() + self.y.square() + self.z.square())
     }
 
     pub fn rotate_by(&self, other: &Rotation3d) -> Self {
-        let p = Quaternion::new(0.0, self.x, self.y, self.z);
-        let qprime = other.q.times(p).times(other.q.inverse());
+        let p = Quaternion::new(0.0, self.x.into(), self.y.into(), self.z.into());
+        let mut qprime: Quaternion<f64> = other.q * p;
+        //TODO: invertion quaternion meanie
+        if let Some(invert) = other.q.try_inverse() {
+            qprime = qprime * invert;
+        } else {
+            panic!("ROTATED BY ZERO QUATERNION 😪")
+        }
+        
         Self::new_xyz(qprime.i, qprime.j, qprime.k)
     }
 
@@ -62,18 +71,18 @@ impl Translation3d {
     }
 
     pub fn times(&self, scalar: f64) -> Self {
-        Self::new_xyz(self.x * scalar, self.y * scalar, self.z * scalar)
+        Self::new_xyz(f64::from(self.x) * scalar, f64::from(self.y) * scalar, f64::from(self.z) * scalar)
     }
 
     pub fn div(&self, scalar: f64) -> Self {
         self.times(1.0 / scalar)
     }
 
-    pub fn interpolate (end_value: Translation3d, t: f64) -> Self {
+    pub fn interpolate (&self, end_value: Translation3d, t: f64) -> Self {
         Self::new_xyz(
-            MathUtil::interpolate(self.x, end_value.x, t),
-            MathUtil::interpolate(self.y, end_value.y, t),
-            MathUtil::interpolate(self.z, end_value.z, t),
+            MathUtil::interpolate(self.x.into(), end_value.x.into(), t),
+            MathUtil::interpolate(self.y.into(), end_value.y.into(), t),
+            MathUtil::interpolate(self.z.into(), end_value.z.into(), t),
         )
     }
 }

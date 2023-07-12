@@ -389,7 +389,10 @@ impl CommandTrait for ProxyCommand {
     }
 
     fn end(&mut self, interrupted: bool) {
-        self.command.as_mut().expect("Command Empty").end(interrupted);
+        self.command
+            .as_mut()
+            .expect("Command Empty")
+            .end(interrupted);
     }
 
     fn is_finished(&mut self) -> bool {
@@ -397,7 +400,10 @@ impl CommandTrait for ProxyCommand {
     }
 
     fn get_requirements(&self) -> Vec<u8> {
-        self.command.as_ref().expect("Command Empty").get_requirements()
+        self.command
+            .as_ref()
+            .expect("Command Empty")
+            .get_requirements()
     }
 
     fn get_name(&self) -> String {

@@ -46,8 +46,7 @@ impl Rotation2d {
             cos,
         }
     }
-    
-    
+
     pub fn plus(&self, other: &Self) -> Self {
         self.rotate_by(other)
     }
@@ -66,16 +65,19 @@ impl Rotation2d {
     pub fn rotate_by(&self, other: &Self) -> Self {
         Self::new_xy(
             self.cos * other.cos - self.sin * other.sin,
-            self.cos * other.sin - self.sin * other.cos
+            self.cos * other.sin - self.sin * other.cos,
         )
     }
-
 
     pub fn get_tan(&self) -> f64 {
         self.sin / self.cos
     }
 
-    pub fn interpolate(&self, end_value: &Self, t: f64) -> Self{
-        self.plus(&end_value.minus(self).times(MathUtil::clamp_double(t, 0.0, 1.0)))
+    pub fn interpolate(&self, end_value: &Self, t: f64) -> Self {
+        self.plus(
+            &end_value
+                .minus(self)
+                .times(MathUtil::clamp_double(t, 0.0, 1.0)),
+        )
     }
 }

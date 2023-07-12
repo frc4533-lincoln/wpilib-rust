@@ -1,5 +1,5 @@
-use nalgebra::Quaternion;
 use nalgebra::ComplexField;
+use nalgebra::Quaternion;
 
 use crate::math::units::distance::Meter;
 use crate::math::util::math_util::MathUtil;
@@ -28,7 +28,7 @@ impl Translation3d {
 
     pub fn new_dist_angle(dist: impl Into<Meter>, angle: Rotation3d) -> Self {
         let rectangle = Self::new_xyz(dist, 0.0, 0.0).rotate_by(&angle);
-        Self{
+        Self {
             x: rectangle.x,
             y: rectangle.y,
             z: rectangle.z,
@@ -37,7 +37,7 @@ impl Translation3d {
 
     pub fn get_distance(&self, other: &Self) -> Meter {
         ComplexField::sqrt(
-            (other.x - self.x).square() + (other.y - self.y).square() + (other.z - self.z).square()
+            (other.x - self.x).square() + (other.y - self.y).square() + (other.z - self.z).square(),
         )
     }
 
@@ -54,7 +54,7 @@ impl Translation3d {
         } else {
             panic!("ROTATED BY ZERO QUATERNION 😪")
         }
-        
+
         Self::new_xyz(qprime.i, qprime.j, qprime.k)
     }
 
@@ -71,14 +71,18 @@ impl Translation3d {
     }
 
     pub fn times(&self, scalar: f64) -> Self {
-        Self::new_xyz(f64::from(self.x) * scalar, f64::from(self.y) * scalar, f64::from(self.z) * scalar)
+        Self::new_xyz(
+            f64::from(self.x) * scalar,
+            f64::from(self.y) * scalar,
+            f64::from(self.z) * scalar,
+        )
     }
 
     pub fn div(&self, scalar: f64) -> Self {
         self.times(1.0 / scalar)
     }
 
-    pub fn interpolate (&self, end_value: Translation3d, t: f64) -> Self {
+    pub fn interpolate(&self, end_value: Translation3d, t: f64) -> Self {
         Self::new_xyz(
             MathUtil::interpolate(self.x.into(), end_value.x.into(), t),
             MathUtil::interpolate(self.y.into(), end_value.y.into(), t),

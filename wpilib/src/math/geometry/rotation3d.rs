@@ -1,8 +1,8 @@
 use std::ops::Mul;
 
+use nalgebra::ComplexField;
 use nalgebra::Quaternion;
 use nalgebra::Rotation3;
-use nalgebra::ComplexField;
 use nalgebra::Vector3;
 // use nalgebra::Matrix3;
 // use nalgebra::linalg::QR;
@@ -14,25 +14,29 @@ use super::Rotation2d;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Rotation3d {
-    pub q: Quaternion<f64>
+    pub q: Quaternion<f64>,
 }
 
 impl Rotation3d {
     pub fn new() -> Self {
         Self {
-            q: Quaternion::new(0.0, 0.0, 0.0, 1.0)
+            q: Quaternion::new(0.0, 0.0, 0.0, 1.0),
         }
     }
     pub fn new_quaternion(q: Quaternion<f64>) -> Self {
         Self {
-            q: Quaternion::normalize(&q) 
+            q: Quaternion::normalize(&q),
         }
     }
-    pub fn new_euler_angles(roll: impl Into <Radian>, pitch: impl Into<Radian>, yaw: impl Into<Radian>) -> Self {
+    pub fn new_euler_angles(
+        roll: impl Into<Radian>,
+        pitch: impl Into<Radian>,
+        yaw: impl Into<Radian>,
+    ) -> Self {
         let roll = f64::from(roll.into());
         let pitch = f64::from(pitch.into());
         let yaw = f64::from(yaw.into());
-        
+
         let cr = ComplexField::cos(roll * 0.5);
         let sr = ComplexField::sin(roll * 0.5);
 
@@ -48,10 +52,8 @@ impl Rotation3d {
             cr * sp * cy + sr * cp * sy,
             cr * cp * sy - sr * sp * cy,
         );
-        
-        Self {
-            q
-        }
+
+        Self { q }
     }
 
     //TODO
@@ -65,22 +67,29 @@ impl Rotation3d {
         if norm == 0.0 {
             return Self::new();
         }
-        
-        let v = axis.mul(1.0 / norm).mul(ComplexField::sin(f64::from(angle) / 2.0));
-        Self::new_quaternion(Quaternion::new(ComplexField::cos(f64::from(angle) / 2.0), v[(0, 0)], v[(1, 0)], v[(2, 0)]))
+
+        let v = axis
+            .mul(1.0 / norm)
+            .mul(ComplexField::sin(f64::from(angle) / 2.0));
+        Self::new_quaternion(Quaternion::new(
+            ComplexField::cos(f64::from(angle) / 2.0),
+            v[(0, 0)],
+            v[(1, 0)],
+            v[(2, 0)],
+        ))
     }
 
     pub fn new_rotation_matrix(matrix: Rotation3<f64>) -> Self {
         let r = matrix;
 
-        //TODO: require rotation matrix to be special orthogonal 
+        //TODO: require rotation matrix to be special orthogonal
 
         let trace = r[(0, 0)] + r[(1, 1)] + r[(2, 2)];
         let w: f64;
         let x: f64;
         let y: f64;
         let z: f64;
-        
+
         if trace > 0.0 {
             let s = 0.5 / ComplexField::sqrt(trace + 1.0);
             w = 0.25 / s;
@@ -88,7 +97,7 @@ impl Rotation3d {
             y = (r[(0, 2)] - r[(2, 0)]) * s;
             z = (r[(1, 0)] - r[(0, 1)]) * s;
         } else {
-            if r[(0, 0)] > r[(1, 1)] && r[(0, 0)] > r[(2, 2)]{
+            if r[(0, 0)] > r[(1, 1)] && r[(0, 0)] > r[(2, 2)] {
                 let s = 2.0 * ComplexField::sqrt(1.0 + r[(0, 0)] - r[(1, 1)] - r[(2, 2)]);
                 w = (r[(2, 1)] - r[(1, 2)]) / s;
                 x = 0.25 * s;
@@ -105,7 +114,7 @@ impl Rotation3d {
                 w = (r[(1, 0)] - r[(0, 1)]) / s;
                 x = (r[(0, 2)] + r[(2, 0)]) / s;
                 y = (r[(1, 2)] + r[(2, 1)]) / s;
-                z = 0.25 * s; 
+                z = 0.25 * s;
             }
         }
         Self::new_quaternion(Quaternion::new(w, x, y, z))
@@ -144,12 +153,12 @@ impl Rotation3d {
         if self.q.w >= 0.0 {
             Self::new_axis_angle(
                 Vector3::new(self.q.i, self.q.j, self.q.k),
-                2.0 * scalar * ComplexField::acos(self.q.w)  
+                2.0 * scalar * ComplexField::acos(self.q.w),
             )
         } else {
             Self::new_axis_angle(
                 Vector3::new(-self.q.i, -self.q.j, -self.q.k),
-                2.0 * scalar * ComplexField::acos(-self.q.w)
+                2.0 * scalar * ComplexField::acos(-self.q.w),
             )
         }
     }
@@ -195,23 +204,32 @@ impl Rotation3d {
     }
 
     pub fn get_axis(&self) -> Vector3<Radian> {
-        let norm = ComplexField::sqrt(self.q.i * self.q.i + self.q.j * self.q.j + self.q.k * self.q.k);
+        let norm =
+            ComplexField::sqrt(self.q.i * self.q.i + self.q.j * self.q.j + self.q.k * self.q.k);
         if norm == 0.0 {
             return Vector3::new(0.0.into(), 0.0.into(), 0.0.into());
         } else {
-            return Vector3::new((self.q.i / norm).into(), (self.q.j / norm).into(), (self.q.k / norm).into());
+            return Vector3::new(
+                (self.q.i / norm).into(),
+                (self.q.j / norm).into(),
+                (self.q.k / norm).into(),
+            );
         }
     }
 
     pub fn get_angle(&self) -> Radian {
-        let norm = ComplexField::sqrt(self.q.i * self.q.i + self.q.j * self.q.j + self.q.k * self.q.k);
+        let norm =
+            ComplexField::sqrt(self.q.i * self.q.i + self.q.j * self.q.j + self.q.k * self.q.k);
         (2.0 * f64::atan2(norm, self.q.w)).into()
     }
 
     pub fn interpolate(&self, end_value: Self, t: f64) -> Self {
-        self.plus(&end_value.minus(self).times(MathUtil::clamp_double(t, 0.0, 1.0)))
+        self.plus(
+            &end_value
+                .minus(self)
+                .times(MathUtil::clamp_double(t, 0.0, 1.0)),
+        )
     }
-
 }
 
 impl From<Rotation2d> for Rotation3d {

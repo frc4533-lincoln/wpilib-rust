@@ -1,8 +1,8 @@
 use nalgebra::ComplexField;
 use nalgebra::Translation2;
 
-use crate::math::units::distance::Meter;
 use crate::math::geometry::rotation2d::Rotation2d;
+use crate::math::units::distance::Meter;
 use crate::math::util::math_util::MathUtil;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -12,7 +12,7 @@ pub struct Translation2d {
 }
 
 impl Translation2d {
-    pub fn new() -> Self{
+    pub fn new() -> Self {
         Self {
             x: 0.0.into(),
             y: 0.0.into(),
@@ -41,7 +41,7 @@ impl Translation2d {
     pub fn get_norm(&self) -> Meter {
         ComplexField::hypot(self.x, self.y).into()
     }
-    
+
     pub fn get_angle(&self) -> Rotation2d {
         Rotation2d::new_xy(self.x, self.y)
     }
@@ -49,10 +49,7 @@ impl Translation2d {
     pub fn rotate_by(&self, other: &Rotation2d) -> Self {
         let x = f64::from(self.x);
         let y = f64::from(self.y);
-        Self::new_xy(
-            x * other.cos - y * other.sin,
-            x * other.sin + y * other.cos,
-        )
+        Self::new_xy(x * other.cos - y * other.sin, x * other.sin + y * other.cos)
     }
 
     pub fn plus(&self, other: &Self) -> Self {
@@ -75,6 +72,7 @@ impl Translation2d {
         Self::new_xy(f64::from(self.x) / scalar, f64::from(self.y) / scalar)
     }
 
+    //pls work 🥺🙏
     pub fn nearest(&self, translations: &[Self]) -> Self {
         let mut nearest = translations[0];
         let mut nearest_distance = self.get_distance(&nearest);
@@ -87,12 +85,11 @@ impl Translation2d {
         }
         nearest
     }
-    
 
     pub fn get_vector(&self) -> Translation2<Meter> {
         Translation2::new(self.x, self.y)
     }
-    
+
     // #[must_use] pub fn strength(&self) -> Meter {
     //     self.inner.vector.norm().into()
     // }

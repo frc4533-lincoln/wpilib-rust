@@ -37,16 +37,15 @@ pub mod robots;
 #[macro_use]
 pub mod macros;
 
-
 //re-exports for macros
 pub use parking_lot::Mutex as WpiMutex;
 pub mod re_exports {
+    pub use nalgebra;
+    pub use num;
     pub use once_cell;
     pub use parking_lot;
-    pub use nalgebra;
-    pub use simba;
-    pub use num;
     pub use serde;
+    pub use simba;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

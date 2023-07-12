@@ -36,9 +36,7 @@ fn is_public_method(method: &syn::ImplItemFn) -> bool {
 }
 fn method_return_type_is(method: &syn::ImplItemFn, ty: &str) -> bool {
     match method.sig.output {
-        syn::ReturnType::Default => {
-            ty.is_empty()
-        }
+        syn::ReturnType::Default => ty.is_empty(),
         syn::ReturnType::Type(_, ref t) => match **t {
             syn::Type::Path(ref path) => path.path.segments.last().unwrap().ident == ty,
             _ => false,
@@ -76,7 +74,10 @@ pub fn subsystem_methods(_attr: TokenStream, input: TokenStream) -> TokenStream 
             let mut attrs = method.attrs.iter().clone();
 
             //for ignor attributes just skip the function
-            if attrs.clone().any(|attr| attr.path().is_ident("dont_static")) {
+            if attrs
+                .clone()
+                .any(|attr| attr.path().is_ident("dont_static"))
+            {
                 let mut new_method = method.clone();
                 new_method.attrs = Vec::new();
                 impl_block.push(new_method);

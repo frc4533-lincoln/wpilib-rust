@@ -1,4 +1,5 @@
 use crate::math::controllers::controller::Controller;
+use crate::math::units::time::Millisecond;
 
 #[derive(Debug, Clone, Copy)]
 pub struct BangBangController {
@@ -31,7 +32,7 @@ impl BangBangController {
 }
 
 impl Controller for BangBangController {
-    fn calculate(&mut self, measurement: f64, _period: f64) -> f64 {
+    fn calculate(&mut self, measurement: f64, _period: impl Into<Millisecond>) -> f64 {
         if !self.enabled {
             return 0.0;
         }

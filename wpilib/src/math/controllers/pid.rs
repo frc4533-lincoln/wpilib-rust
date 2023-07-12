@@ -46,13 +46,14 @@ impl PIDController {
 
 impl Controller for PIDController {
     fn calculate(&mut self, measurement: f64, period: impl Into<Millisecond>) -> f64 {
+        let period: f64 = period.into().value();
         if !self.enabled {
             return 0.0;
         }
         let error = self.set_point - measurement;
-        self.total_error += error * period.into().value();
+        self.total_error += error * period;
         self.total_error = self.total_error.clamp(self.i_min, self.i_max);
-        let d_error = (error - self.prev_error) / period.into().value();
+        let d_error = (error - self.prev_error) / period;
         self.prev_error = error;
         let p = self.k_p * error;
         let i = self.k_i * self.total_error;

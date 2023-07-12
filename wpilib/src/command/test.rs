@@ -1,5 +1,7 @@
 
-use parking_lot::Mutex;
+use std::{sync::Arc, ops::Deref};
+
+use parking_lot::{Mutex, MutexGuard};
 use wpilib_macros::{subsystem, subsystem_methods};
 
 use crate::command::{
@@ -8,7 +10,7 @@ use crate::command::{
     ConditionalScheduler,
 };
 
-use super::{commands::CommandBuilder, manager::{Condition, ConditionResponse}};
+use super::{commands::CommandBuilder, manager::{Condition, ConditionResponse, Subsystem, SubsystemRef}};
 
 #[test]
 fn test_command() {
@@ -38,24 +40,15 @@ struct TestSubsystem {
     calls: i32,
 }
 
-subsystem!(TestSubsystem);
 
-#[subsystem_methods]
 impl TestSubsystem {
-    #[new]
-    fn constructor() -> Self {
+    fn new() -> Self {
         Self {
             motor_running: false,
             default_running: false,
             calls: 0
         }
     }
-
-    #[periodic]
-    fn periodic(&self) {
-        println!("Periodic");
-    }
-
     pub fn is_motor_running(&self) -> bool {
         self.motor_running
     }
@@ -85,37 +78,41 @@ impl TestSubsystem {
     pub fn is_default_running(&mut self) -> bool{
         self.default_running
     }
-    #[default_command]
-    pub fn default(&self) -> Command {
+}
+impl SubsystemRef<TestSubsystem> {
+    pub fn default_command(&self) -> Command {
+        let clone = self.clone();
         CommandBuilder::new().init(|| ())
-        .periodic(|| {
+        .periodic(move || {
             println!("default");
-            Self::set_default_running();
+            clone.0.lock().set_default_running();
         })
         .is_finished(|| false)
         .end(|interrupted| if interrupted {})
-        .with_requirements(vec![Self::suid()])
+        .with_requirements(vec![1])
         .build()
         .with_name("Activate Motor")
     
     }
     pub fn cmd_activate_motor(&self) -> Command {
+        let clone1 = self.clone();
+        let clone2 = self.clone();
         CommandBuilder::new().init(
-            || {
+            move || {
                 println!("cmd_activate_motor"); 
-                Self::add_call();
-                Self::start_motor();
+                clone1.0.lock().add_call();
+                clone1.0.lock().start_motor();
             }
         )
         .periodic(|| ())
         .is_finished(|| false)
-        .end(|interrupted| {
+        .end(move |interrupted| {
             if interrupted {
-                Self::sub_call();
+                clone2.0.lock().sub_call();
             }
-            Self::stop_motor();
+            clone2.0.lock().stop_motor();
         })
-        .with_requirements(vec![Self::suid()])
+        .with_requirements(vec![1])
         .build()
         .with_name("Activate Motor")
     }
@@ -126,8 +123,13 @@ impl TestSubsystem {
     }
 
     pub fn reset(&mut self) {
-        self.calls = 0;
-        self.motor_running = false;
+        self.0.lock().calls = 0;
+        self.0.lock().motor_running = false;
+    }
+}
+impl Subsystem for TestSubsystem {
+    fn periodic(&self) {
+        println!("Periodic");
     }
 }
 
@@ -137,16 +139,15 @@ impl TestSubsystem {
 fn test_subsystem() {
     CommandManager::clear_cond_schedulers();
     CommandManager::cancel_all();
-    TestSubsystem::reset();
     // CommandManager::register_subsystem(
     //     TestSubsystem::suid(),
     //     || TestSubsystem::periodic(),
     //     Some(TestSubsystem::default_command()),
     // );
-    register_subsystem!(TestSubsystem);
-    assert!(!TestSubsystem::is_default_running());
+    let instance = register_subsystem!(TestSubsystem);
+    assert!(!instance.0.lock().is_default_running());
     CommandManager::run();
-    assert!(TestSubsystem::is_default_running());
+    assert!(instance.0.lock().is_default_running());
 }
 
 
@@ -166,23 +167,24 @@ impl Condition for Immediately {
 fn test_on_true() {
     CommandManager::clear_cond_schedulers();
     CommandManager::cancel_all();
-    TestSubsystem::reset();
+    let instance = register_subsystem!(TestSubsystem);
     let mut scheduler = ConditionalScheduler::new();
     
     let cond = conditions::on_true(|| true);
     
-    scheduler.add_cond(cond , || TestSubsystem::cmd_activate_motor());
+    let clone = instance.clone();    
+    scheduler.add_cond(cond , move || clone.cmd_activate_motor());
 
-    assert!(!TestSubsystem::is_motor_running());
-    assert_eq!(TestSubsystem::get_calls(), 0);
+    assert!(!instance.0.lock().is_motor_running());
+    assert_eq!(instance.0.lock().get_calls(), 0);
 
 
     CommandManager::add_cond_scheduler(scheduler);
     CommandManager::run();
     CommandManager::run();
     CommandManager::run();
-    assert!(TestSubsystem::is_motor_running());
-    assert_eq!(TestSubsystem::get_calls(), 1);
+    assert!(instance.0.lock().is_motor_running());
+    assert_eq!(instance.0.lock().get_calls(), 1);
 }
 
 struct StateStruct {
@@ -204,36 +206,37 @@ fn set_state(b: bool) {
 fn test_while_true() {
     CommandManager::clear_cond_schedulers();
     CommandManager::cancel_all();
-    TestSubsystem::reset();
+    let instance = register_subsystem!(TestSubsystem);
     let mut scheduler = ConditionalScheduler::new();
-    
-    
-    let cond = conditions::while_true(|| get_state());
-    
-    scheduler.add_cond(cond , || TestSubsystem::cmd_activate_motor());
 
-    assert!(!TestSubsystem::is_motor_running());
-    assert_eq!(TestSubsystem::get_calls(), 0);
+    let cond = conditions::while_true(|| get_state());
+
+    let clone = instance.clone();    
+    
+    scheduler.add_cond(cond , move || clone.cmd_activate_motor());
+
+    assert!(!instance.0.lock().is_motor_running());
+    assert_eq!(instance.0.lock().get_calls(), 0);
 
 
     set_state(false);
     CommandManager::add_cond_scheduler(scheduler);
     CommandManager::run();
-    assert!(!TestSubsystem::is_motor_running());
-    assert_eq!(TestSubsystem::get_calls(), 0);
+    assert!(!instance.0.lock().is_motor_running());
+    assert_eq!(instance.0.lock().get_calls(), 0);
 
     set_state(true);
     CommandManager::run();
-    assert!(TestSubsystem::is_motor_running());
-    assert_eq!(TestSubsystem::get_calls(), 1);
+    assert!(instance.0.lock().is_motor_running());
+    assert_eq!(instance.0.lock().get_calls(), 1);
 
     CommandManager::run();
-    assert!(TestSubsystem::is_motor_running());
-    assert_eq!(TestSubsystem::get_calls(), 1);
+    assert!(instance.0.lock().is_motor_running());
+    assert_eq!(instance.0.lock().get_calls(), 1);
     set_state(false);
 
     CommandManager::run();
-    assert_eq!(TestSubsystem::get_calls(), 0);
-    assert!(!TestSubsystem::is_motor_running());
+    assert_eq!(instance.0.lock().get_calls(), 0);
+    assert!(!instance.0.lock().is_motor_running());
 
 }

@@ -1,13 +1,47 @@
-use std::{collections::{HashMap, HashSet}, ops::Deref};
+use std::{collections::{HashMap, HashSet}, ops::Deref, sync::Arc};
 
 use once_cell::sync::Lazy;
-use parking_lot::Mutex;
+use parking_lot::{Mutex, MutexGuard};
 
 use super::{commands::CommandTrait, Command};
 
 static MANAGER: Mutex<Lazy<CommandManager>> = Mutex::new(Lazy::new(CommandManager::new));
 
 type SubsystemSUID = u8;
+
+pub trait Subsystem {
+    fn periodic(&self) {}
+}
+
+type SubsystemArc = Arc<Mutex<dyn Subsystem + Sync + Send>>;
+#[derive(Debug)]
+pub struct SubsystemRef<T: Subsystem + Sync + Send>(pub Arc<Mutex<T>>);
+
+impl<T: Subsystem + Sync + Send + 'static> SubsystemRef<T> {
+    pub fn get_arc(&self) -> SubsystemArc {
+        self.0.clone()
+    }
+    pub fn get_arc_impl(&self) -> Arc<Mutex<T>> {
+        self.0.clone()
+    }
+}
+impl<T: Subsystem + Sync + Send + 'static> Clone for SubsystemRef<T> {
+    fn clone(&self) -> Self {
+        Self{
+            0: self.get_arc_impl()
+        }
+    }
+}
+
+// impl<T: Subsystem + Sync + Send + 'static> Deref for SubsystemRef<T> {
+//     type Target = T;
+//     #[inline]
+//     fn deref(&self) -> &<Self as Deref>::Target {
+//         self.0.lock().deref()
+//     }
+// }
+
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CommandIndex {
@@ -16,7 +50,7 @@ pub enum CommandIndex {
 }
 
 pub struct CommandManager {
-    periodic_callbacks: Vec<fn()>,
+    periodic_callbacks: Vec<SubsystemArc>,
     commands: Vec<Option<Command>>,
     interrupt_state: HashMap<CommandIndex, bool>,
     default_commands: Vec<Option<Command>>,
@@ -25,6 +59,7 @@ pub struct CommandManager {
     initialized_commands: HashSet<CommandIndex>,
     orphaned_commands: HashSet<CommandIndex>,
     cond_schedulers: Vec<ConditionalScheduler>,
+    suid: SubsystemSUID,
 }
 impl std::fmt::Debug for CommandManager {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -52,14 +87,15 @@ impl CommandManager {
             initialized_commands: HashSet::new(),
             orphaned_commands: HashSet::new(),
             cond_schedulers: Vec::new(),
+            suid: 0
         }
     }
 
-    pub fn register_subsystem(suid: SubsystemSUID, periodic_callback: fn(), default_command: Option<Command>) {
+    pub fn register_subsystem(suid: SubsystemSUID, subsystem: SubsystemArc, default_command: Option<Command>) {
         let mut scheduler = MANAGER.lock();
         scheduler
             .periodic_callbacks
-            .push(periodic_callback);
+            .push(subsystem);
         scheduler.default_commands.push(default_command);
         let idx = scheduler.default_commands.len() - 1;
         scheduler.subsystem_to_default.insert(suid, CommandIndex::DefaultCommand(idx));
@@ -68,7 +104,13 @@ impl CommandManager {
         drop(scheduler);
     }
 
-
+    pub fn get_suid() -> SubsystemSUID{
+        let mut scheduler = MANAGER.lock();
+        let newsuid = scheduler.suid;
+        scheduler.suid = scheduler.suid + 1;
+        drop(scheduler);
+        newsuid
+    }
     /// Will run all periodic callbacks, run all conditional schedulers, init all un-initialized commands, and run all commands
     /// in that order.
     pub fn run() {
@@ -80,7 +122,7 @@ impl CommandManager {
 
     fn run_subsystems(&mut self) {
         for callback in &self.periodic_callbacks {
-            callback();
+            callback.lock().periodic();
         }
         for (suid, cmd_idx) in &self.subsystem_to_default {
             if !self.requirements.contains_key(suid) {
@@ -231,10 +273,11 @@ pub enum ConditionResponse {
     NoChange,
 }
 
-pub trait Condition: Send {
+pub trait Condition: Send{
     fn get_condition(&mut self) -> ConditionResponse;
     fn clone_boxed(&self) -> Box<dyn Condition>;
 }
+
 
 impl Clone for Box<dyn Condition>{
     fn clone(&self) -> Self {
@@ -243,10 +286,32 @@ impl Clone for Box<dyn Condition>{
 }
 
 
+
+pub trait BoxedFn: Send + Sync {
+    fn clone_boxed(&self) -> Box<dyn BoxedFn>;
+    fn call(&self) -> Command;
+}
+
+impl<F: Fn() -> Command + Send + Sync + Clone + 'static> BoxedFn for F {
+    fn clone_boxed(&self) -> Box<dyn BoxedFn> {
+        Box::new(self.clone())
+    }
+    fn call(&self) -> Command{
+        self()
+    }
+
+}
+
+impl Clone for Box<dyn BoxedFn> {
+    fn clone(&self) -> Self {
+        self.clone_boxed()
+    }
+}
+
 #[derive(Clone)]
 pub struct ConditionalScheduler {
     active_commands: HashMap<usize, CommandIndex>,
-    conds: Vec<(Box<dyn Condition>, fn() -> Command)>,
+    conds: Vec<(Box<dyn Condition>, Box<dyn BoxedFn>)>,
 }
 
 impl ConditionalScheduler {
@@ -266,14 +331,14 @@ impl ConditionalScheduler {
 
             match condition_result{
                 ConditionResponse::Start => {
-                    let command = cmd();
+                    let command = cmd.call();
                     let cmd_idx = manager.cond_schedule(command);
                     println!("start"); 
                     self.active_commands.insert(i, cmd_idx);
                 },
                 ConditionResponse::Continue => {
                     if !self.active_commands.contains_key(&i) {
-                        let command = cmd();
+                        let command = cmd.call();
                         let cmd_idx = manager.cond_schedule(command);
                         println!("continue"); 
                         self.active_commands.insert(i, cmd_idx);    
@@ -292,8 +357,8 @@ impl ConditionalScheduler {
         }
     }
 
-    pub fn add_cond(&mut self, cond: impl Condition, cmd: fn() -> Command) {
-        self.conds.push((cond.clone_boxed(), cmd));
+    pub fn add_cond(&mut self, cond: impl Condition, cmd: impl BoxedFn + 'static) {
+        self.conds.push((cond.clone_boxed(), Box::new(cmd)));
     }
 }
 impl std::fmt::Debug for ConditionalScheduler {
@@ -306,10 +371,14 @@ impl std::fmt::Debug for ConditionalScheduler {
 #[macro_export]
 macro_rules! register_subsystem {
     ($name:ident) => {
-        CommandManager::register_subsystem(
-            $name::suid(),
-            || $name::periodic(),
-            Some($name::default_command()),
-        );
+        {
+            let instance = SubsystemRef{0: std::sync::Arc::<parking_lot::Mutex<$name>>::new(parking_lot::Mutex::<$name>::new($name::new()))};
+            CommandManager::register_subsystem(
+                CommandManager::get_suid(),
+                instance.get_arc(),
+                Some(instance.default_command()),
+            );
+            instance.clone()
+        }
     };
 }

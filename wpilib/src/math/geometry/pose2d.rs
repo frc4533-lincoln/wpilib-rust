@@ -1,7 +1,9 @@
-use super::transform2d::Transform2d;
-use super::twist2d::Twist2d;
 use super::Rotation2d;
+use super::Transform2d;
 use super::Translation2d;
+use super::Twist2d;
+
+use crate::math::units::distance::Meter;
 
 use nalgebra::ComplexField;
 
@@ -28,7 +30,7 @@ impl Pose2d {
         }
     }
 
-    pub fn new_xy_rot(x: f64, y: f64, rotation: Rotation2d) -> Self {
+    pub fn new_xy_rot(x: impl Into<Meter>, y: impl Into<Meter>, rotation: Rotation2d) -> Self {
         Self::new_trans_rot(Translation2d::new_xy(x, y), rotation)
     }
 

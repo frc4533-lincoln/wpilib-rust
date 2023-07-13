@@ -1,22 +1,23 @@
-use super::pose2d::Pose2d;
-use super::Rotation2d;
-use super::Translation2d;
+// use super::pose2d::Pose3d;
+use super::Pose3d;
+use super::Rotation3d;
+use super::Translation3d;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub struct Transform2d {
-    pub translation: Translation2d,
-    pub rotation: Rotation2d,
+pub struct Transform3d {
+    pub translation: Translation3d,
+    pub rotation: Rotation3d,
 }
 
-impl Transform2d {
+impl Transform3d {
     pub fn new() -> Self {
         Self {
-            translation: Translation2d::new(),
-            rotation: Rotation2d::new(),
+            translation: Translation3d::new(),
+            rotation: Rotation3d::new(),
         }
     }
 
-    pub fn new_pose_pose(initial: Pose2d, last: Pose2d) -> Self {
+    pub fn new_pose_pose(initial: Pose3d, last: Pose3d) -> Self {
         let translation = last
             .translation
             .minus(&initial.translation)
@@ -28,7 +29,7 @@ impl Transform2d {
         }
     }
 
-    pub fn new_trans_rot(translation: Translation2d, rotation: Rotation2d) -> Self {
+    pub fn new_trans_rot(translation: Translation3d, rotation: Rotation3d) -> Self {
         Self {
             translation,
             rotation,
@@ -36,7 +37,7 @@ impl Transform2d {
     }
 
     pub fn times(&self, scalar: f64) -> Self {
-        Self::new_trans_rot(self.translation.times(scalar), self.rotation.times(scalar))
+        Transform3d::new_trans_rot(self.translation.times(scalar), self.rotation.times(scalar))
     }
 
     pub fn div(&self, scalar: f64) -> Self {
@@ -45,8 +46,8 @@ impl Transform2d {
 
     pub fn plus(&self, other: &Self) -> Self {
         Self::new_pose_pose(
-            Pose2d::new(),
-            Pose2d::new().transform_by(*self).transform_by(*other),
+            Pose3d::new(),
+            Pose3d::new().transform_by(*self).transform_by(*other),
         )
     }
 

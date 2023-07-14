@@ -1,7 +1,4 @@
-use super::Rotation2d;
-use super::Transform2d;
-use super::Translation2d;
-use super::Twist2d;
+use super::{Rotation2d, Transform2d, Translation2d, Twist2d};
 
 use crate::math::units::distance::Meter;
 

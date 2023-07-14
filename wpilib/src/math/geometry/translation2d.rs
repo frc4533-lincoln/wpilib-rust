@@ -1,7 +1,6 @@
-use nalgebra::ComplexField;
-use nalgebra::Translation2;
+use nalgebra::{ComplexField, Translation2};
 
-use crate::math::geometry::rotation2d::Rotation2d;
+use super::Rotation2d;
 use crate::math::units::distance::Meter;
 use crate::math::util::math_util::MathUtil;
 

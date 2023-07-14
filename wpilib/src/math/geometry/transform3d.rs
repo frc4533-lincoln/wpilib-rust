@@ -1,7 +1,4 @@
-// use super::pose2d::Pose3d;
-use super::Pose3d;
-use super::Rotation3d;
-use super::Translation3d;
+use super::{Pose3d, Rotation3d, Translation3d};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Transform3d {

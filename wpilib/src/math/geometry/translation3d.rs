@@ -1,11 +1,10 @@
-use nalgebra::ComplexField;
-use nalgebra::Quaternion;
+use nalgebra::{ComplexField, Quaternion};
 
 use crate::math::units::distance::Meter;
 use crate::math::util::math_util::MathUtil;
 
-use crate::math::geometry::Rotation3d;
-use crate::math::geometry::Translation2d;
+use super::{Rotation3d, Translation2d};
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Translation3d {
     pub x: Meter,

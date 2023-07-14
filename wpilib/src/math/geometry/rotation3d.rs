@@ -1,15 +1,6 @@
-use std::ops::Mul;
 
-use nalgebra::linalg::QR;
-use nalgebra::ComplexField;
-use nalgebra::Matrix3;
-use nalgebra::Normed;
-use nalgebra::Quaternion;
-use nalgebra::RealField;
-use nalgebra::Rotation3;
-use nalgebra::Unit;
-use nalgebra::UnitQuaternion;
-use nalgebra::Vector3;
+
+use nalgebra::{linalg::QR, ComplexField, Quaternion, Rotation3, Unit, UnitQuaternion, Vector3};
 
 use crate::math::units::angle::Radian;
 use crate::math::util::math_util::MathUtil;

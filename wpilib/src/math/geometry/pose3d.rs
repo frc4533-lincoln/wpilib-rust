@@ -1,6 +1,4 @@
-use std::ops::{Add, Mul};
-
-use nalgebra::{ComplexField, Matrix3, Matrix3x1, Quaternion, Rotation, Rotation3, Vector3};
+use nalgebra::{Matrix3, Matrix3x1, Quaternion, Rotation, Rotation3, Vector3};
 
 use crate::math::units::{angle::Radian, distance::Meter};
 

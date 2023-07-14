@@ -1,6 +1,4 @@
-use super::pose2d::Pose2d;
-use super::Rotation2d;
-use super::Translation2d;
+use super::{Pose2d, Rotation2d, Translation2d};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Transform2d {

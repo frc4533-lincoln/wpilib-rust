@@ -1,4 +1,4 @@
-use super::{Pose3d, Rotation3d, Translation3d};
+use super::{Pose3d, Rotation3d, Translation3d, Transform2d};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Transform3d {
@@ -55,5 +55,17 @@ impl Transform3d {
                 .rotate_by(&self.rotation.unary_minus()),
             self.rotation.unary_minus(),
         )
+    }
+}
+
+impl From<Transform2d> for Transform3d {
+    fn from(transform: Transform2d) -> Self {
+        Self::new_trans_rot(transform.translation.into(), transform.rotation.into())
+    }
+}
+
+impl From<Transform3d> for Transform2d {
+    fn from(transform: Transform3d) -> Self {
+        Self::new_trans_rot(transform.translation.into(), transform.rotation.into())
     }
 }

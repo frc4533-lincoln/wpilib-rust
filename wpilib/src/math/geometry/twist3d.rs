@@ -1,5 +1,7 @@
 use crate::math::units::{angle::Radian, distance::Meter};
 
+use super::Twist2d;
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Twist3d {
     pub dx: Meter,
@@ -38,5 +40,17 @@ impl Twist3d {
             ry: ry.into(),
             rz: rz.into(),
         }
+    }
+}
+
+impl From<Twist2d> for Twist3d {
+    fn from(twist: Twist2d) -> Self {
+        Self::new_dv(twist.dx, twist.dy, 0.0, 0.0, 0.0, twist.dtheta)
+    }
+}
+
+impl From<Twist3d> for Twist2d {
+    fn from (twist: Twist3d) -> Self {
+        Self::new_dv(twist.dx, twist.dy, twist.rz)
     }
 }

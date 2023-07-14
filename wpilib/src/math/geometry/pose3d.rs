@@ -2,7 +2,7 @@ use nalgebra::{Matrix3, Matrix3x1, Quaternion, Rotation, Rotation3, Vector3};
 
 use crate::math::units::{angle::Radian, distance::Meter};
 
-use super::{Rotation3d, Transform3d, Translation3d, Twist3d};
+use super::{Rotation3d, Transform3d, Translation3d, Twist3d, Pose2d};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Pose3d {
@@ -153,5 +153,17 @@ impl Pose3d {
             rotation[0],
             0.0.into(),
         )
+    }
+}
+
+impl From<Pose2d> for Pose3d {
+    fn from(pose: Pose2d) -> Self {
+        Self::new_trans_rot(pose.translation.into(), pose.rotation.into())
+    }
+}
+
+impl From<Pose3d> for Pose2d {
+    fn from(pose: Pose3d) -> Self {
+        Self::new_trans_rot(pose.translation.into(), pose.rotation.into())
     }
 }

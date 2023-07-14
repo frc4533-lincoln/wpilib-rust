@@ -19,6 +19,5 @@ jobs:
     - name: Build
       working-directory: ./
       run: cargo build --verbose
-# TODO add back when subsystem test doesn't hang forever      
-#    - name: Run tests
-#      run: cargo test --verbose
+    - name: Run tests
+      run: cargo test --verbose

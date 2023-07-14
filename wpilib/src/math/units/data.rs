@@ -3,6 +3,7 @@ use crate::math::units::data_rate::{
 };
 use crate::math::units::time::Second;
 use wpilib_macros::{unit, unit_conversion};
+crate::crate_namespace!();
 
 unit!(Byte, f64);
 unit!(Kilobyte, f64);

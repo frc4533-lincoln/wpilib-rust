@@ -46,7 +46,7 @@ impl<T: Subsystem + Sync + Send + 'static> Clone for SubsystemRef<T> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CommandIndex {
     DefaultCommand(usize),
-    Command(usize)
+    Command(usize),
 }
 
 pub struct CommandManager {
@@ -98,9 +98,13 @@ impl CommandManager {
             .push(subsystem);
         scheduler.default_commands.push(default_command);
         let idx = scheduler.default_commands.len() - 1;
-        scheduler.subsystem_to_default.insert(suid, CommandIndex::DefaultCommand(idx));
-        scheduler.interrupt_state.insert(CommandIndex::DefaultCommand(idx), false);
-        
+        scheduler
+            .subsystem_to_default
+            .insert(suid, CommandIndex::DefaultCommand(idx));
+        scheduler
+            .interrupt_state
+            .insert(CommandIndex::DefaultCommand(idx), false);
+
         drop(scheduler);
     }
 
@@ -148,7 +152,7 @@ impl CommandManager {
         for index in cmds {
             if let Some(command) = match index {
                 CommandIndex::Command(cmd) => &mut self.commands[*cmd],
-                CommandIndex::DefaultCommand(cmd) => &mut self.default_commands[*cmd]
+                CommandIndex::DefaultCommand(cmd) => &mut self.default_commands[*cmd],
             } {
                 if !self.initialized_commands.contains(index) {
                     command.init();
@@ -162,7 +166,7 @@ impl CommandManager {
                         CommandIndex::DefaultCommand(_) => {}
                     }
                 }
-                if self.interrupt_state[index]{
+                if self.interrupt_state[index] {
                     command.end(true);
                     match *index {
                         CommandIndex::Command(idx) => to_remove.push(idx),
@@ -172,7 +176,8 @@ impl CommandManager {
             }
         }
         for index in to_remove {
-            self.initialized_commands.remove(&CommandIndex::Command(index));
+            self.initialized_commands
+                .remove(&CommandIndex::Command(index));
             if let Some(cmd) = self.commands.remove(index) {
                 let requirements = cmd.get_requirements();
                 if requirements.is_empty() {
@@ -208,14 +213,14 @@ impl CommandManager {
         }
     }
 
-    pub(super) fn cond_schedule(&mut self, command: Command) -> CommandIndex{
+    pub(super) fn cond_schedule(&mut self, command: Command) -> CommandIndex {
         let requirements = command.get_requirements();
         let index = self.add_command(command);
         if requirements.is_empty() {
             self.orphaned_commands.insert(index);
         } else {
             for requirement in requirements {
-                //TODO: implement cancelation policy
+                //TODO: implement cancellation policy
                 self.requirements.insert(requirement, index);
             }
         }
@@ -230,7 +235,7 @@ impl CommandManager {
             scheduler.orphaned_commands.insert(index);
         } else {
             for requirement in requirements {
-                //TODO: implement cancelation policy
+                //TODO: implement cancellation policy
                 scheduler.requirements.insert(requirement, index);
             }
         }
@@ -242,7 +247,7 @@ impl CommandManager {
             match maybe_command {
                 Some(command) => {
                     command.end(true);
-                },
+                }
                 None => {}
             }
         }
@@ -250,8 +255,6 @@ impl CommandManager {
         scheduler.requirements.clear();
         scheduler.initialized_commands.clear();
         scheduler.orphaned_commands.clear();
-
-        
     }
 
     pub fn add_cond_scheduler(scheduler: ConditionalScheduler) {
@@ -259,8 +262,22 @@ impl CommandManager {
         manager.cond_schedulers.push(scheduler);
     }
 
-    pub fn clear_cond_schedulers(){
+    pub fn clear_cond_schedulers() {
         let mut manager = MANAGER.lock();
+        manager.cond_schedulers.clear();
+    }
+
+    #[cfg(test)]
+    pub fn purge_state_test() {
+        let mut manager = MANAGER.lock();
+        manager.periodic_callbacks.clear();
+        manager.commands.clear();
+        manager.interrupt_state.clear();
+        manager.default_commands.clear();
+        manager.subsystem_to_default.clear();
+        manager.requirements.clear();
+        manager.initialized_commands.clear();
+        manager.orphaned_commands.clear();
         manager.cond_schedulers.clear();
     }
 }
@@ -278,8 +295,7 @@ pub trait Condition: Send{
     fn clone_boxed(&self) -> Box<dyn Condition>;
 }
 
-
-impl Clone for Box<dyn Condition>{
+impl Clone for Box<dyn Condition> {
     fn clone(&self) -> Self {
         self.deref().clone_boxed()
     }
@@ -324,34 +340,33 @@ impl ConditionalScheduler {
     }
 
     pub fn poll(&mut self, manager: &mut CommandManager) {
-        
-        for i in 0..self.conds.len(){
+        for i in 0..self.conds.len() {
             let (cond, cmd) = &mut self.conds[i];
             let condition_result = cond.get_condition();
 
-            match condition_result{
+            match condition_result {
                 ConditionResponse::Start => {
                     let command = cmd.call();
                     let cmd_idx = manager.cond_schedule(command);
-                    println!("start"); 
+                    println!("start");
                     self.active_commands.insert(i, cmd_idx);
-                },
+                }
                 ConditionResponse::Continue => {
-                    if !self.active_commands.contains_key(&i) {
+                    self.active_commands.entry(i).or_insert_with(|| {
                         let command = cmd.call();
                         let cmd_idx = manager.cond_schedule(command);
-                        println!("continue"); 
-                        self.active_commands.insert(i, cmd_idx);    
-                    }
-                },
+                        println!("continue");
+                        cmd_idx
+                    });
+                }
                 ConditionResponse::Stop => {
                     if self.active_commands.contains_key(&i) {
-                        manager.interrupt_command(*self.active_commands.get(&i).unwrap());
-                        self.active_commands.remove(&i);    
+                        manager.interrupt_command(self.active_commands[&i]);
+                        self.active_commands.remove(&i);
                     }
-                },
+                }
                 ConditionResponse::NoChange => {
-                    println!("no_change"); 
+                    println!("no_change");
                 }
             }
         }
@@ -363,8 +378,7 @@ impl ConditionalScheduler {
 }
 impl std::fmt::Debug for ConditionalScheduler {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ConditionalScheduler")
-            .finish()
+        f.debug_struct("ConditionalScheduler").finish()
     }
 }
 

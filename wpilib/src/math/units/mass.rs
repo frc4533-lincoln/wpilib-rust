@@ -1,4 +1,5 @@
 use wpilib_macros::{unit, unit_conversion};
+crate::crate_namespace!();
 
 unit!(Kilogram, f64);
 unit!(Gram, f64);

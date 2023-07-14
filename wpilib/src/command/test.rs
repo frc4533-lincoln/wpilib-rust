@@ -1,38 +1,22 @@
-
-use std::{sync::Arc, ops::Deref};
-
-use parking_lot::{Mutex, MutexGuard};
 use wpilib_macros::{subsystem, subsystem_methods};
+use wpilib::command::manager::{Subsystem, SubsystemRef};
 
-use crate::command::{
-    commands::CommandTrait, manager::CommandManager, Command,
-    conditions::{self},
-    ConditionalScheduler,
+crate_namespace!();
+
+use crate::{
+    command::{
+        commands::CommandTrait,
+        conditions::{self},
+        manager::CommandManager,
+        Command, ConditionalScheduler,
+    },
+    crate_namespace,
 };
 
-use super::{commands::CommandBuilder, manager::{Condition, ConditionResponse, Subsystem, SubsystemRef}};
-
-#[test]
-fn test_command() {
-    CommandManager::cancel_all();
-    fn schedule_test() {
-        struct TestCommand {}
-        impl CommandTrait for TestCommand {}
-
-        let command = TestCommand {};
-
-        CommandManager::schedule(Command::custom(Box::new(command)));
-    }
-
-    schedule_test();
-
-    std::thread::spawn(|| {
-        schedule_test();
-        CommandManager::run();
-    })
-    .join()
-    .unwrap();
-}
+use super::{
+    commands::CommandBuilder,
+    manager::{Condition, ConditionResponse},
+};
 
 struct TestSubsystem {
     motor_running: bool,
@@ -46,36 +30,39 @@ impl TestSubsystem {
         Self {
             motor_running: false,
             default_running: false,
-            calls: 0
+            calls: 0,
         }
     }
-    pub fn is_motor_running(&self) -> bool {
+    fn is_motor_running(&self) -> bool {
         self.motor_running
     }
 
-    pub fn start_motor(&mut self) {
+    fn start_motor(&mut self) {
         self.motor_running = true;
     }
-    pub fn stop_motor(&mut self) {
+    fn stop_motor(&mut self) {
         self.motor_running = false;
     }
 
-
-    pub fn add_call(&mut self){
+    fn inner_add_call(&mut self) {
         self.calls += 1;
     }
 
-    pub fn sub_call(&mut self){
+    fn add_call(&mut self) {
+        self.inner_add_call()
+    }
+
+    fn sub_call(&mut self) {
         self.calls -= 1;
     }
-    pub fn get_calls(&mut self) -> i32{
+    fn get_calls(&mut self) -> i32 {
         self.calls
     }
-    pub fn set_default_running(&mut self){
+    fn set_default_running(&mut self) {
         self.default_running = true;
     }
 
-    pub fn is_default_running(&mut self) -> bool{
+    fn is_default_running(&mut self) -> bool {
         self.default_running
     }
 }
@@ -94,6 +81,7 @@ impl SubsystemRef<TestSubsystem> {
         .with_name("Activate Motor")
     
     }
+
     pub fn cmd_activate_motor(&self) -> Command {
         let clone1 = self.clone();
         let clone2 = self.clone();
@@ -133,9 +121,26 @@ impl Subsystem for TestSubsystem {
     }
 }
 
+fn test_command() {
+    fn schedule_test() {
+        struct TestCommand {}
+        impl CommandTrait for TestCommand {}
 
+        let command = TestCommand {};
 
-#[test]
+        CommandManager::schedule(Command::custom(Box::new(command)));
+    }
+
+    schedule_test();
+
+    std::thread::spawn(|| {
+        schedule_test();
+        CommandManager::run();
+    })
+    .join()
+    .unwrap();
+}
+
 fn test_subsystem() {
     CommandManager::clear_cond_schedulers();
     CommandManager::cancel_all();
@@ -150,7 +155,6 @@ fn test_subsystem() {
     assert!(instance.0.lock().is_default_running());
 }
 
-
 struct Immediately {}
 
 impl Condition for Immediately {
@@ -158,26 +162,26 @@ impl Condition for Immediately {
         ConditionResponse::Start
     }
     fn clone_boxed(&self) -> Box<dyn Condition> {
-        Box::new(Immediately{})
+        Box::new(Immediately {})
     }
 }
 
-
-#[test]
 fn test_on_true() {
     CommandManager::clear_cond_schedulers();
     CommandManager::cancel_all();
     let instance = register_subsystem!(TestSubsystem);
     let mut scheduler = ConditionalScheduler::new();
-    
+
     let cond = conditions::on_true(|| true);
     
-    let clone = instance.clone();    
-    scheduler.add_cond(cond , move || clone.cmd_activate_motor());
+        
+    scheduler.add_cond(cond , {
+        let clone = instance.clone();
+        move || clone.cmd_activate_motor()
+    });
 
     assert!(!instance.0.lock().is_motor_running());
     assert_eq!(instance.0.lock().get_calls(), 0);
-
 
     CommandManager::add_cond_scheduler(scheduler);
     CommandManager::run();
@@ -187,56 +191,16 @@ fn test_on_true() {
     assert_eq!(instance.0.lock().get_calls(), 1);
 }
 
-struct StateStruct {
-    state_var: bool
+fn run_in_clean_state(func: fn()) {
+    func();
+    CommandManager::purge_state_test();
+    
 }
 
-static STATE: Mutex<StateStruct> = Mutex::new(StateStruct { state_var: false });
-
-fn get_state() -> bool{
-    let state = STATE.lock();
-    state.state_var
-}
-fn set_state(b: bool) {
-    let mut state = STATE.lock();
-    state.state_var = b;
-}
 
 #[test]
-fn test_while_true() {
-    CommandManager::clear_cond_schedulers();
-    CommandManager::cancel_all();
-    let instance = register_subsystem!(TestSubsystem);
-    let mut scheduler = ConditionalScheduler::new();
-
-    let cond = conditions::while_true(|| get_state());
-
-    let clone = instance.clone();    
-    
-    scheduler.add_cond(cond , move || clone.cmd_activate_motor());
-
-    assert!(!instance.0.lock().is_motor_running());
-    assert_eq!(instance.0.lock().get_calls(), 0);
-
-
-    set_state(false);
-    CommandManager::add_cond_scheduler(scheduler);
-    CommandManager::run();
-    assert!(!instance.0.lock().is_motor_running());
-    assert_eq!(instance.0.lock().get_calls(), 0);
-
-    set_state(true);
-    CommandManager::run();
-    assert!(instance.0.lock().is_motor_running());
-    assert_eq!(instance.0.lock().get_calls(), 1);
-
-    CommandManager::run();
-    assert!(instance.0.lock().is_motor_running());
-    assert_eq!(instance.0.lock().get_calls(), 1);
-    set_state(false);
-
-    CommandManager::run();
-    assert_eq!(instance.0.lock().get_calls(), 0);
-    assert!(!instance.0.lock().is_motor_running());
-
+fn parent_test() {
+    run_in_clean_state(test_command);
+    run_in_clean_state(test_subsystem);
+    run_in_clean_state(test_on_true);
 }

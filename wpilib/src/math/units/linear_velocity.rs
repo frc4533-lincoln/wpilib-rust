@@ -1,6 +1,7 @@
 use crate::math::units::distance::{Feet, Meter};
 use crate::math::units::time::Second;
 use wpilib_macros::{unit, unit_conversion, unit_dimensional_analysis};
+crate::crate_namespace!();
 
 unit!(MeterPerSecond, f64);
 unit!(KilometerPerHour, f64);

@@ -1,6 +1,4 @@
-use super::pose2d::Pose2d;
-use super::Rotation2d;
-use super::Translation2d;
+use super::{Pose2d, Rotation2d, Translation2d};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Transform2d {
@@ -16,7 +14,6 @@ impl Transform2d {
         }
     }
 
-    //borrowing for now may need to fix later 🥴
     pub fn new_pose_pose(initial: Pose2d, last: Pose2d) -> Self {
         let translation = last
             .translation
@@ -42,6 +39,13 @@ impl Transform2d {
 
     pub fn div(&self, scalar: f64) -> Self {
         self.times(1.0 / scalar)
+    }
+
+    pub fn plus(&self, other: &Self) -> Self {
+        Self::new_pose_pose(
+            Pose2d::new(),
+            Pose2d::new().transform_by(*self).transform_by(*other),
+        )
     }
 
     pub fn inverse(&self) -> Self {

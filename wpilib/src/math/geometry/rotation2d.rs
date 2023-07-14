@@ -1,5 +1,4 @@
-use crate::math::units::angle::Radian;
-use crate::math::units::distance::Meter;
+use crate::math::units::{angle::Radian, distance::Meter};
 use crate::math::util::math_util::MathUtil;
 
 use nalgebra::ComplexField;

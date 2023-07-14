@@ -1,4 +1,6 @@
-use nalgebra::{ComplexField, Matrix3, Quaternion, Rotation3, Vector3};
+use std::ops::{Add, Mul};
+
+use nalgebra::{ComplexField, Matrix3, Matrix3x1, Quaternion, Rotation, Rotation3, Vector3};
 
 use crate::math::units::{angle::Radian, distance::Meter};
 
@@ -64,8 +66,12 @@ impl Pose3d {
         Self::new_trans_rot(transform.translation, transform.rotation)
     }
 
-    // pub fn exp (&self, twist: Twist3d) -> Self {
-    //     let u = Vector3::new(twist.dx, twist.dy, twist.dz);
+    // pub fn exp(&self, twist: Twist3d) -> Self {
+    //     let u = Vector3::new(
+    //         f64::from(twist.dx),
+    //         f64::from(twist.dy),
+    //         f64::from(twist.dz),
+    //     );
     //     let rvec = Vector3::new(twist.rx, twist.ry, twist.rz);
     //     let omega = self.rotation_vector_to_matrix(rvec);
     //     let omgega_sq = omega * omega;
@@ -85,9 +91,9 @@ impl Pose3d {
     //         c = (1.0 - a) / theta_sq;
     //     }
 
-    //     let r = Matrix3::identity() + a.into() * omega + b.into() * omgega_sq;
-    //     let v = Matrix3::identity() + b.into() * omega + c.into() * omgega_sq;
-    //     let translation_component: Matrix3<f64> = v * u;
+    //     let r: Matrix3<f64> = Matrix3::identity() + a.into() * omega + b.into() * omgega_sq;
+    //     let v: Matrix3<f64> = Matrix3::identity() + b.into() * omega + c.into() * omgega_sq;
+    //     let translation_component: Matrix3x1<f64> = v * u;
 
     //     let transform = Transform3d::new_trans_rot(
     //         Translation3d::new_xyz(
@@ -95,17 +101,16 @@ impl Pose3d {
     //             translation_component[1],
     //             translation_component[2],
     //         ),
-    //         Rotation3d::new_quaternion(Quaternion::from(r)),
+    //         Rotation3d::new_rotation_matrix(Rotation3::from_matrix(&r)),
     //     );
     //     self.plus(transform)
-
     // }
 
-    // pub fn log (&self, end: &Self) -> Twist3d {
+    // pub fn log(&self, end: &Self) -> Twist3d {
     //     let transform = end.relative_to(self);
-    //     let rvec = Vector3::fromransform.rotation.q.into());transform.rotation.q;
+    //     let rvec = transform.rotation.q.as_vector();
 
-    //     let omega = self.rotation_vector_to_matrix(rvec);
+    //     let omega = transform.rotation.q.to_rotation_matrix();
     //     let theta = rvec.norm();
     //     let theta_sq = theta * theta;
 
@@ -118,13 +123,15 @@ impl Pose3d {
     //         c = (1.0 - a / (2.0 * b)) / theta_sq;
     //     }
 
-    //     let v_inv = Matrix3::identity() - 0.5.into() * omega + c.into() * omega * omega;
+    //     let v_inv: Matrix3<f64> =
+    //         Matrix3::identity() - (0.5.into() * omega) + c.into() * omega * omega;
 
-    //     let twist_translation = v_inv * Vector3::new(
-    //         transform.translation.x,
-    //         transform.translation.y,
-    //         transform.translation.z,
-    //     );
+    //     let twist_translation: Vector3<f64> = v_inv
+    //         * Vector3::new(
+    //             f64::from(transform.translation.x),
+    //             f64::from(transform.translation.y),
+    //             f64::from(transform.translation.z),
+    //         );
 
     //     Twist3d::new_dv(
     //         twist_translation[0],

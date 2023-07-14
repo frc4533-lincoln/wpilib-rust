@@ -47,7 +47,7 @@ impl Translation3d {
 
     pub fn rotate_by(&self, other: &Rotation3d) -> Self {
         let p = Quaternion::new(0.0, self.x.into(), self.y.into(), self.z.into());
-        let mut qprime: Quaternion<f64> = other.q * p;
+        let mut qprime: Quaternion<f64> = other.q.quaternion() * p;
         //TODO: invertion quaternion meanie
         if let Some(invert) = other.q.try_inverse() {
             qprime = qprime * invert;

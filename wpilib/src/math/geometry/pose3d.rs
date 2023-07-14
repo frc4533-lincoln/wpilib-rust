@@ -1,7 +1,6 @@
+use nalgebra::{ComplexField, Matrix3, Quaternion, Rotation3, Vector3};
 
-use nalgebra::{Matrix3, Vector3, Quaternion, Rotation3, ComplexField};
-
-use crate::math::units::{distance::Meter, angle::Radian};
+use crate::math::units::{angle::Radian, distance::Meter};
 
 use super::{Rotation3d, Transform3d, Translation3d, Twist3d};
 
@@ -12,51 +11,55 @@ pub struct Pose3d {
 }
 
 impl Pose3d {
-    pub fn new () -> Self {
+    pub fn new() -> Self {
         Self {
             translation: Translation3d::new(),
             rotation: Rotation3d::new(),
         }
     }
 
-    pub fn new_trans_rot (translation: Translation3d, rotation: Rotation3d) -> Self {
+    pub fn new_trans_rot(translation: Translation3d, rotation: Rotation3d) -> Self {
         Self {
             translation,
             rotation,
         }
     }
 
-    pub fn new_xyz_rot (x: impl Into<Meter>, y: impl Into<Meter>, z: impl Into<Meter>, rotation: Rotation3d) -> Self {
-        Self::new_trans_rot(
-            Translation3d::new_xyz(x, y, z),
-            rotation)
+    pub fn new_xyz_rot(
+        x: impl Into<Meter>,
+        y: impl Into<Meter>,
+        z: impl Into<Meter>,
+        rotation: Rotation3d,
+    ) -> Self {
+        Self::new_trans_rot(Translation3d::new_xyz(x, y, z), rotation)
     }
 
-    pub fn plus (&self, other: Transform3d) -> Self {
+    pub fn plus(&self, other: Transform3d) -> Self {
         self.transform_by(other)
     }
 
-    pub fn minus (&self, other: &Self) -> Transform3d {
+    pub fn minus(&self, other: &Self) -> Transform3d {
         let pose = self.relative_to(other);
         Transform3d::new_trans_rot(pose.translation, pose.rotation)
     }
 
-    pub fn times (&self, scalar: f64) -> Self {
+    pub fn times(&self, scalar: f64) -> Self {
         Self::new_trans_rot(self.translation.times(scalar), self.rotation.times(scalar))
     }
 
-    pub fn div (&self, scalar: f64) -> Self {
+    pub fn div(&self, scalar: f64) -> Self {
         self.times(1.0 / scalar)
     }
 
-    pub fn transform_by (&self, other: Transform3d) -> Self {
+    pub fn transform_by(&self, other: Transform3d) -> Self {
         Self::new_trans_rot(
-            self.translation.plus(&other.translation.rotate_by(&self.rotation)),
+            self.translation
+                .plus(&other.translation.rotate_by(&self.rotation)),
             other.rotation.plus(&self.rotation),
         )
     }
 
-    pub fn relative_to (&self, other: &Self) -> Self {
+    pub fn relative_to(&self, other: &Self) -> Self {
         let transform = Transform3d::new_pose_pose(*other, *self);
         Self::new_trans_rot(transform.translation, transform.rotation)
     }
@@ -98,7 +101,7 @@ impl Pose3d {
 
     // }
 
-    // pub fn log (&self, end: &Self) -> Twist3d { 
+    // pub fn log (&self, end: &Self) -> Twist3d {
     //     let transform = end.relative_to(self);
     //     let rvec = Vector3::fromransform.rotation.q.into());transform.rotation.q;
 
@@ -133,11 +136,17 @@ impl Pose3d {
     //     )
     // }
 
-    fn rotation_vector_to_matrix (&self, rotation: Vector3<Radian>) -> Matrix3<Radian> {
+    fn rotation_vector_to_matrix(&self, rotation: Vector3<Radian>) -> Matrix3<Radian> {
         nalgebra::Matrix3::new(
-            0.0.into(), -rotation[2], rotation[1],
-            rotation[2], 0.0.into(), -rotation[0],
-            -rotation[1], rotation[0], 0.0.into(),
-        )       
+            0.0.into(),
+            -rotation[2],
+            rotation[1],
+            rotation[2],
+            0.0.into(),
+            -rotation[0],
+            -rotation[1],
+            rotation[0],
+            0.0.into(),
+        )
     }
 }

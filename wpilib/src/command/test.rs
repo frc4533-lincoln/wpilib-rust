@@ -1,4 +1,4 @@
-use wpilib_macros::{subsystem, subsystem_methods, command};
+use wpilib_macros::{subsystem, subsystem_methods, command, command_end};
 use wpilib::command::manager::{Subsystem, SubsystemRef};
 
 crate_namespace!();
@@ -68,12 +68,15 @@ impl TestSubsystem {
 }
 impl SubsystemRef<TestSubsystem> {
     pub fn default_command(&self) -> Command {
-        let clone = self.clone();
         CommandBuilder::new().init(|| ())
-        .periodic(move || {
-            println!("default");
-            clone.0.lock().set_default_running();
-        })
+        .periodic(
+            command!{self,
+                {
+                    println!("default");
+                    __self.set_default_running();
+                }
+            }
+        )
         .is_finished(|| false)
         .end(|interrupted| if interrupted {})
         .with_requirements(vec![1])
@@ -95,7 +98,14 @@ impl SubsystemRef<TestSubsystem> {
         .periodic(|| ())
         .is_finished(|| false)
         .end(
-            |b| ()
+            command_end!{self,
+                {
+                    if interrupted {
+                        __self.sub_call();
+                    }
+                    __self.stop_motor();
+                }
+            }
         )
         .with_requirements(vec![1])
         .build()

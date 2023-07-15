@@ -506,6 +506,26 @@ pub fn command(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
+pub fn command_end(input: TokenStream) -> TokenStream {
+
+    let (copy_block, acquire_group, main_block) = get_command_structure(input);
+    let mut output = TokenStream2::new();
+    let closure_open = quote!{
+        {
+            #copy_block
+            move |interrupted| {
+                #acquire_group
+                #main_block
+            }
+        }
+    };
+
+    output.extend(closure_open);
+
+    output.into()
+}
+
+#[proc_macro]
 pub fn unit(input: TokenStream) -> TokenStream {
     let mut output = TokenStream2::new();
     //get an ident and a type from the token stream

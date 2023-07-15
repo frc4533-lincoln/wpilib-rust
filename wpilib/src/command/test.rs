@@ -37,29 +37,8 @@ impl TestSubsystem {
         self.motor_running
     }
 
-    fn start_motor(&mut self) {
-        self.motor_running = true;
-    }
-    fn stop_motor(&mut self) {
-        self.motor_running = false;
-    }
-
-    fn inner_add_call(&mut self) {
-        self.calls += 1;
-    }
-
-    fn add_call(&mut self) {
-        self.inner_add_call()
-    }
-
-    fn sub_call(&mut self) {
-        self.calls -= 1;
-    }
     fn get_calls(&mut self) -> i32 {
         self.calls
-    }
-    fn set_default_running(&mut self) {
-        self.default_running = true;
     }
 
     fn is_default_running(&mut self) -> bool {
@@ -73,7 +52,7 @@ impl SubsystemRef<TestSubsystem> {
             command!{self,
                 {
                     println!("default");
-                    __self.set_default_running();
+                    __self.default_running = true;
                 }
             }
         )
@@ -90,8 +69,8 @@ impl SubsystemRef<TestSubsystem> {
             command!{self,
                 {
                     println!("cmd_activate_motor"); 
-                    __self.add_call();
-                    __self.start_motor();
+                    __self.calls += 1;
+                    __self.motor_running = true;
                 }
             }
         )
@@ -101,9 +80,9 @@ impl SubsystemRef<TestSubsystem> {
             command_end!{self,
                 {
                     if interrupted {
-                        __self.sub_call();
+                        __self.calls -= 1;
                     }
-                    __self.stop_motor();
+                    __self.motor_running = false;
                 }
             }
         )

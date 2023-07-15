@@ -1,4 +1,4 @@
-use wpilib_macros::{command, command_end};
+use wpilib_macros::{command, command_end, command_provider};
 use wpilib::command::manager::{Subsystem, SubsystemRef};
 
 crate_namespace!();
@@ -57,7 +57,7 @@ impl SubsystemRef<TestSubsystem> {
             }
         )
         .is_finished(|| false)
-        .end(|interrupted| if interrupted {})
+        .end(command_end!{{}})
         .with_requirements(vec![1])
         .build()
         .with_name("Activate Motor")
@@ -161,10 +161,13 @@ fn test_on_true() {
     let cond = conditions::on_true(|| true);
     
         
-    scheduler.add_cond(cond , {
-        let clone = instance.clone();
-        move || clone.cmd_activate_motor()
-    });
+    scheduler.add_cond(cond,
+        command_provider!{instance,
+            {
+                __instance.cmd_activate_motor()
+            }
+        }
+    );
 
     assert!(!instance.0.lock().is_motor_running());
     assert_eq!(instance.0.lock().get_calls(), 0);

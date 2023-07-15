@@ -1,4 +1,4 @@
-use wpilib_macros::{subsystem, subsystem_methods, command, command_end};
+use wpilib_macros::{command, command_end};
 use wpilib::command::manager::{Subsystem, SubsystemRef};
 
 crate_namespace!();

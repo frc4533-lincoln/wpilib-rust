@@ -1,7 +1,7 @@
 use std::{collections::{HashMap, HashSet}, ops::Deref, sync::Arc};
 
 use once_cell::sync::Lazy;
-use parking_lot::{Mutex, MutexGuard};
+use parking_lot::Mutex;
 
 use super::{commands::CommandTrait, Command};
 

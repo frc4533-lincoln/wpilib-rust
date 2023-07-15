@@ -1,4 +1,4 @@
-use wpilib_macros::{subsystem, subsystem_methods};
+use wpilib_macros::{subsystem, subsystem_methods, command};
 use wpilib::command::manager::{Subsystem, SubsystemRef};
 
 crate_namespace!();
@@ -83,23 +83,20 @@ impl SubsystemRef<TestSubsystem> {
     }
 
     pub fn cmd_activate_motor(&self) -> Command {
-        let clone1 = self.clone();
-        let clone2 = self.clone();
         CommandBuilder::new().init(
-            move || {
-                println!("cmd_activate_motor"); 
-                clone1.0.lock().add_call();
-                clone1.0.lock().start_motor();
+            command!{self,
+                {
+                    println!("cmd_activate_motor"); 
+                    __self.add_call();
+                    __self.start_motor();
+                }
             }
         )
         .periodic(|| ())
         .is_finished(|| false)
-        .end(move |interrupted| {
-            if interrupted {
-                clone2.0.lock().sub_call();
-            }
-            clone2.0.lock().stop_motor();
-        })
+        .end(
+            |b| ()
+        )
         .with_requirements(vec![1])
         .build()
         .with_name("Activate Motor")

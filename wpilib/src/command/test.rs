@@ -52,7 +52,7 @@ impl SubsystemRef<TestSubsystem> {
             command!{self,
                 {
                     println!("default");
-                    __self.default_running = true;
+                    self.default_running = true;
                 }
             }
         )
@@ -69,8 +69,8 @@ impl SubsystemRef<TestSubsystem> {
             command!{self,
                 {
                     println!("cmd_activate_motor"); 
-                    __self.calls += 1;
-                    __self.motor_running = true;
+                    self.calls += 1;
+                    self.motor_running = true;
                 }
             }
         )
@@ -80,9 +80,9 @@ impl SubsystemRef<TestSubsystem> {
             command_end!{self,
                 {
                     if interrupted {
-                        __self.calls -= 1;
+                        self.calls -= 1;
                     }
-                    __self.motor_running = false;
+                    self.motor_running = false;
                 }
             }
         )
@@ -164,7 +164,7 @@ fn test_on_true() {
     scheduler.add_cond(cond,
         command_provider!{instance,
             {
-                __instance.cmd_activate_motor()
+                instance.cmd_activate_motor()
             }
         }
     );

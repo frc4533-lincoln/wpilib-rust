@@ -1,10 +1,10 @@
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use proc_macro2::TokenTree as TokenTree2;
-use quote::quote;
+use quote::{quote, ToTokens};
 use std::collections::VecDeque;
 use std::sync::atomic::AtomicU8;
-
+use syn::{visit_mut::{self, VisitMut}, LitInt};
 fn is_non_static_method(method: &syn::ImplItemFn) -> bool {
     if !method.sig.inputs.is_empty() {
         matches!(method.sig.inputs.first().unwrap(), syn::FnArg::Receiver(_))
@@ -403,7 +403,20 @@ pub fn subsystem(input: TokenStream) -> TokenStream {
 }
 
 
-fn get_command_structure(input: TokenStream) -> (TokenStream2, TokenStream2, syn::ExprBlock){
+struct ReceiverReplacer;
+
+impl VisitMut for ReceiverReplacer {
+    fn visit_ident_mut(&mut self, node: &mut proc_macro2::Ident) {        
+        let maybe_receiver =  syn::parse2::<syn::Receiver>(node.clone().to_token_stream());
+        if maybe_receiver.is_ok(){
+            *node = syn::Ident::new(
+                &format!("__self"),
+                proc_macro2::Span::call_site(),
+            );   
+        }
+    }
+}
+fn get_subsystem_use_structure(input: TokenStream) -> (TokenStream2, TokenStream2, TokenStream2){
     let mut iter = TokenStream2::from(input).into_iter().filter(|token| {
         matches!(
             token,
@@ -444,21 +457,18 @@ fn get_command_structure(input: TokenStream) -> (TokenStream2, TokenStream2, syn
     
     } 
     
-    let main_block = syn::parse2::<syn::ExprBlock>(maybe_ident.into()).expect("Expected Block");
-    
+    let mut main_block = syn::parse2::<syn::ExprBlock>(maybe_ident.into()).expect("Expected Block");
+
+
     let mut new_arc_pointers = Vec::<syn::Ident>::new();
     let mut copy_block = TokenStream2::new();
 
     for arc_ptr in &arc_pointers {
-        let new_arc_ptr = syn::Ident::new(
-            &format!("__{}", arc_ptr),
-            proc_macro2::Span::call_site(),
-        );
         let copy_quote = quote!(
-            let #new_arc_ptr = #arc_ptr.clone();
+            let #arc_ptr  = #arc_ptr.clone();
         );
         copy_block.extend(copy_quote);
-        new_arc_pointers.push(new_arc_ptr);
+        new_arc_pointers.push(arc_ptr.clone());
     }
 
     if _self.is_some() {
@@ -472,6 +482,9 @@ fn get_command_structure(input: TokenStream) -> (TokenStream2, TokenStream2, syn
         };
         copy_block.extend(copy_quote);
         new_arc_pointers.push(new_arc_ptr);
+
+        ReceiverReplacer.visit_expr_block_mut(&mut main_block);
+
     }
     let mut acquire_group = TokenStream2::new();
     
@@ -481,14 +494,16 @@ fn get_command_structure(input: TokenStream) -> (TokenStream2, TokenStream2, syn
         };
         acquire_group.extend(copy_quote);
     }
-    return (copy_block, acquire_group, main_block);
+
+    let main_block_stream = main_block.to_token_stream();
+    return (copy_block, acquire_group, main_block_stream);
 }
 
 
 #[proc_macro]
 pub fn command(input: TokenStream) -> TokenStream {
 
-    let (copy_block, acquire_group, main_block) = get_command_structure(input);
+    let (copy_block, acquire_group, main_block) = get_subsystem_use_structure(input);
     let mut output = TokenStream2::new();
     let closure_open = quote!{
         {
@@ -508,7 +523,7 @@ pub fn command(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn command_end(input: TokenStream) -> TokenStream {
 
-    let (copy_block, acquire_group, main_block) = get_command_structure(input);
+    let (copy_block, acquire_group, main_block) = get_subsystem_use_structure(input);
     let mut output = TokenStream2::new();
     let closure_open = quote!{
         {
@@ -528,7 +543,7 @@ pub fn command_end(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn command_provider(input: TokenStream) -> TokenStream {
     // TODO: Don't need to generate acquire_group
-    let (copy_block, _, main_block) = get_command_structure(input);
+    let (copy_block, _, main_block) = get_subsystem_use_structure(input);
     let mut output = TokenStream2::new();
     let closure_open = quote!{
         {

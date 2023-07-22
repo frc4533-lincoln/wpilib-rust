@@ -4,7 +4,7 @@ use proc_macro2::TokenTree as TokenTree2;
 use quote::{quote, ToTokens};
 use std::collections::VecDeque;
 use std::sync::atomic::AtomicU8;
-use syn::{visit_mut::{self, VisitMut}, LitInt};
+use syn::{visit_mut::{VisitMut}};
 fn is_non_static_method(method: &syn::ImplItemFn) -> bool {
     if !method.sig.inputs.is_empty() {
         matches!(method.sig.inputs.first().unwrap(), syn::FnArg::Receiver(_))
@@ -520,6 +520,7 @@ pub fn command(input: TokenStream) -> TokenStream {
     output.into()
 }
 
+
 #[proc_macro]
 pub fn command_end(input: TokenStream) -> TokenStream {
 
@@ -558,6 +559,27 @@ pub fn command_provider(input: TokenStream) -> TokenStream {
 
     output.into()
 }
+
+#[proc_macro]
+pub fn use_subsystem(input: TokenStream) -> TokenStream {
+    // TODO: Don't need to generate acquire_group
+    let (copy_block, acquire_group, main_block) = get_subsystem_use_structure(input);
+    let mut output = TokenStream2::new();
+    let closure_open = quote!{
+        {
+            #copy_block
+            {
+                #acquire_group
+                #main_block
+            }
+        }
+    };
+
+    output.extend(closure_open);
+
+    output.into()
+}
+
 
 #[proc_macro]
 pub fn unit(input: TokenStream) -> TokenStream {

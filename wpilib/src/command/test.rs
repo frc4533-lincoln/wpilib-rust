@@ -1,4 +1,4 @@
-use wpilib_macros::{command, command_end, command_provider};
+use wpilib_macros::{command, command_end, command_provider, use_subsystem};
 use wpilib::command::manager::{Subsystem, SubsystemRef};
 
 crate_namespace!();
@@ -97,8 +97,12 @@ impl SubsystemRef<TestSubsystem> {
     }
 
     pub fn reset(&mut self) {
-        self.0.lock().calls = 0;
-        self.0.lock().motor_running = false;
+        use_subsystem!{self,
+            {
+                self.calls = 0;
+                self.motor_running = false;
+            }
+        }
     }
 }
 impl Subsystem for TestSubsystem {

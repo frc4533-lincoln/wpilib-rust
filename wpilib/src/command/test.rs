@@ -1,5 +1,5 @@
-use wpilib_macros::{command, command_end, command_provider, use_subsystem};
 use wpilib::command::manager::{Subsystem, SubsystemRef};
+use wpilib_macros::{command, command_end, command_provider, use_subsystem};
 
 crate_namespace!();
 
@@ -24,7 +24,6 @@ struct TestSubsystem {
     calls: i32,
 }
 
-
 impl TestSubsystem {
     fn new() -> Self {
         Self {
@@ -47,48 +46,43 @@ impl TestSubsystem {
 }
 impl SubsystemRef<TestSubsystem> {
     pub fn default_command(&self) -> Command {
-        CommandBuilder::new().init(|| ())
-        .periodic(
-            command!{self,
+        CommandBuilder::new()
+            .init(|| ())
+            .periodic(command! {self,
                 {
                     println!("default");
                     self.default_running = true;
                 }
-            }
-        )
-        .is_finished(|| false)
-        .end(command_end!{{}})
-        .with_requirements(vec![1])
-        .build()
-        .with_name("Activate Motor")
-    
+            })
+            .is_finished(|| false)
+            .end(command_end! {{}})
+            .with_requirements(vec![1])
+            .build()
+            .with_name("Activate Motor")
     }
 
     pub fn cmd_activate_motor(&self) -> Command {
-        CommandBuilder::new().init(
-            command!{self,
+        CommandBuilder::new()
+            .init(command! {self,
                 {
-                    println!("cmd_activate_motor"); 
+                    println!("cmd_activate_motor");
                     self.calls += 1;
                     self.motor_running = true;
                 }
-            }
-        )
-        .periodic(|| ())
-        .is_finished(|| false)
-        .end(
-            command_end!{self,
+            })
+            .periodic(|| ())
+            .is_finished(|| false)
+            .end(command_end! {self,
                 {
                     if interrupted {
                         self.calls -= 1;
                     }
                     self.motor_running = false;
                 }
-            }
-        )
-        .with_requirements(vec![1])
-        .build()
-        .with_name("Activate Motor")
+            })
+            .with_requirements(vec![1])
+            .build()
+            .with_name("Activate Motor")
     }
 
     #[allow(dead_code)]
@@ -97,7 +91,7 @@ impl SubsystemRef<TestSubsystem> {
     }
 
     pub fn reset(&mut self) {
-        use_subsystem!{self,
+        use_subsystem! {self,
             {
                 self.calls = 0;
                 self.motor_running = false;
@@ -163,14 +157,14 @@ fn test_on_true() {
     let mut scheduler = ConditionalScheduler::new();
 
     let cond = conditions::on_true(|| true);
-    
-        
-    scheduler.add_cond(cond,
-        command_provider!{instance,
+
+    scheduler.add_cond(
+        cond,
+        command_provider! {instance,
             {
                 instance.cmd_activate_motor()
             }
-        }
+        },
     );
 
     assert!(!instance.0.lock().is_motor_running());
@@ -187,13 +181,19 @@ fn test_on_true() {
 fn run_in_clean_state(func: fn()) {
     func();
     CommandManager::purge_state_test();
-    
 }
 
+#[test]
+fn command() {
+    run_in_clean_state(test_command);
+}
 
 #[test]
-fn parent_test() {
-    run_in_clean_state(test_command);
+fn subsystem() {
     run_in_clean_state(test_subsystem);
+}
+
+#[test]
+fn on_true() {
     run_in_clean_state(test_on_true);
 }

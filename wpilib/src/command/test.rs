@@ -28,7 +28,7 @@ subsystem!(TestSubsystem);
 #[subsystem_methods]
 impl TestSubsystem {
     #[new]
-    fn constructor() -> Self {
+    const fn constructor() -> Self {
         Self {
             motor_running: false,
             default_running: false,
@@ -138,7 +138,7 @@ fn test_command() {
         CommandManager::run();
     })
     .join()
-    .unwrap();
+    .expect("Failed to join thread");
 }
 
 fn test_subsystem() {
@@ -156,7 +156,7 @@ impl Condition for Immediately {
         ConditionResponse::Start
     }
     fn clone_boxed(&self) -> Box<dyn Condition> {
-        Box::new(Immediately {})
+        Box::new(Self {})
     }
 }
 
@@ -165,7 +165,7 @@ fn test_on_true() {
 
     let cond = conditions::on_true(|| true);
 
-    scheduler.add_cond(&cond, || TestSubsystem::cmd_activate_motor());
+    scheduler.add_cond(&cond, TestSubsystem::cmd_activate_motor);
 
     assert!(!TestSubsystem::is_motor_running());
     assert_eq!(TestSubsystem::get_calls(), 0);

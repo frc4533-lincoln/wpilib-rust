@@ -7,11 +7,12 @@ pub mod conditions;
 mod test;
 
 pub use commands::Command;
-pub use conditions::on_false;
-pub use conditions::on_true;
-pub use conditions::while_false;
-pub use conditions::while_true;
-pub use conditions::OnTrue;
-pub use conditions::WhileTrue;
 pub use manager::CommandManager;
 pub use manager::ConditionalScheduler;
+pub use manager::SubsystemRef;
+pub use conditions::OnTrue;
+pub use conditions::WhileTrue;
+pub use conditions::on_true;
+pub use conditions::on_false;
+pub use conditions::while_false;
+pub use conditions::while_true;

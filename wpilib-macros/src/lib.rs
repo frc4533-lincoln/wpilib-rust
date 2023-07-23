@@ -1,10 +1,10 @@
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use proc_macro2::TokenTree as TokenTree2;
-use quote::quote;
+use quote::{quote, ToTokens};
 use std::collections::VecDeque;
 use std::sync::atomic::AtomicU8;
-
+use syn::{visit_mut::{VisitMut}};
 fn is_non_static_method(method: &syn::ImplItemFn) -> bool {
     if !method.sig.inputs.is_empty() {
         matches!(method.sig.inputs.first().unwrap(), syn::FnArg::Receiver(_))
@@ -401,6 +401,185 @@ pub fn subsystem(input: TokenStream) -> TokenStream {
 
     output.into()
 }
+
+
+struct ReceiverReplacer;
+
+impl VisitMut for ReceiverReplacer {
+    fn visit_ident_mut(&mut self, node: &mut proc_macro2::Ident) {        
+        let maybe_receiver =  syn::parse2::<syn::Receiver>(node.clone().to_token_stream());
+        if maybe_receiver.is_ok(){
+            *node = syn::Ident::new(
+                &format!("__self"),
+                proc_macro2::Span::call_site(),
+            );   
+        }
+    }
+}
+fn get_subsystem_use_structure(input: TokenStream) -> (TokenStream2, TokenStream2, TokenStream2){
+    let mut iter = TokenStream2::from(input).into_iter().filter(|token| {
+        matches!(
+            token,
+            proc_macro2::TokenTree::Ident(_) | proc_macro2::TokenTree::Punct(_) | proc_macro2::TokenTree::Group(_)
+        )
+    });
+    
+    let mut maybe_ident = iter.next().expect("Could not find identifier for command");
+
+    let mut arc_pointers = Vec::<syn::Ident>::new();
+    let mut _self: Option<syn::Receiver> = None;
+
+    while match maybe_ident {
+        proc_macro2::TokenTree::Ident(_) => true,
+        _ => false
+    } {
+        let maybe_punc = iter.next().expect("Could not find comma after identifier. Did you forget the body?");
+        // assure we have 
+        if match maybe_punc {
+            proc_macro2::TokenTree::Punct(ref punc) => punc.as_char() != ',',
+            _ => true
+        }  {
+            panic!("Could not find comma after identifier.");
+        }
+
+        let ident = syn::parse2::<syn::Ident>(maybe_ident.clone().into());
+        if ident.is_err() {
+            let receiver = syn::parse2::<syn::Receiver>(maybe_ident.into());
+            match _self {
+                Some(_) => panic!("Did not expect self to be passed in twice"),
+                _ => {} 
+            }
+            _self = Some(receiver.expect("could not parse ident or self"));
+        } else {
+            arc_pointers.push(ident.expect("Could not parse ident"));
+        }
+        maybe_ident = iter.next().expect("Could not find identifier for command");
+    
+    } 
+    
+    let mut main_block = syn::parse2::<syn::ExprBlock>(maybe_ident.into()).expect("Expected Block");
+
+
+    let mut new_arc_pointers = Vec::<syn::Ident>::new();
+    let mut copy_block = TokenStream2::new();
+
+    for arc_ptr in &arc_pointers {
+        let copy_quote = quote!(
+            let #arc_ptr  = #arc_ptr.clone();
+        );
+        copy_block.extend(copy_quote);
+        new_arc_pointers.push(arc_ptr.clone());
+    }
+
+    if _self.is_some() {
+        let _self_unwrapped = _self.unwrap();
+        let new_arc_ptr = syn::Ident::new(
+            &format!("__self"),
+            proc_macro2::Span::call_site(),
+        );
+        let copy_quote = quote!{
+            let #new_arc_ptr = #_self_unwrapped.clone();
+        };
+        copy_block.extend(copy_quote);
+        new_arc_pointers.push(new_arc_ptr);
+
+        ReceiverReplacer.visit_expr_block_mut(&mut main_block);
+
+    }
+    let mut acquire_group = TokenStream2::new();
+    
+    for arc_ptr in &new_arc_pointers {
+        let copy_quote = quote!{
+            let mut #arc_ptr = #arc_ptr.0.lock();
+        };
+        acquire_group.extend(copy_quote);
+    }
+
+    let main_block_stream = main_block.to_token_stream();
+    return (copy_block, acquire_group, main_block_stream);
+}
+
+
+#[proc_macro]
+pub fn command(input: TokenStream) -> TokenStream {
+
+    let (copy_block, acquire_group, main_block) = get_subsystem_use_structure(input);
+    let mut output = TokenStream2::new();
+    let closure_open = quote!{
+        {
+            #copy_block
+            move || {
+                #acquire_group
+                #main_block
+            }
+        }
+    };
+
+    output.extend(closure_open);
+
+    output.into()
+}
+
+
+#[proc_macro]
+pub fn command_end(input: TokenStream) -> TokenStream {
+
+    let (copy_block, acquire_group, main_block) = get_subsystem_use_structure(input);
+    let mut output = TokenStream2::new();
+    let closure_open = quote!{
+        {
+            #copy_block
+            move |interrupted| {
+                #acquire_group
+                #main_block
+            }
+        }
+    };
+
+    output.extend(closure_open);
+
+    output.into()
+}
+
+#[proc_macro]
+pub fn command_provider(input: TokenStream) -> TokenStream {
+    // TODO: Don't need to generate acquire_group
+    let (copy_block, _, main_block) = get_subsystem_use_structure(input);
+    let mut output = TokenStream2::new();
+    let closure_open = quote!{
+        {
+            #copy_block
+            move || {
+                #main_block
+            }
+        }
+    };
+
+    output.extend(closure_open);
+
+    output.into()
+}
+
+#[proc_macro]
+pub fn use_subsystem(input: TokenStream) -> TokenStream {
+    // TODO: Don't need to generate acquire_group
+    let (copy_block, acquire_group, main_block) = get_subsystem_use_structure(input);
+    let mut output = TokenStream2::new();
+    let closure_open = quote!{
+        {
+            #copy_block
+            {
+                #acquire_group
+                #main_block
+            }
+        }
+    };
+
+    output.extend(closure_open);
+
+    output.into()
+}
+
 
 #[proc_macro]
 pub fn unit(input: TokenStream) -> TokenStream {

@@ -1,4 +1,5 @@
-use wpilib_macros::{subsystem, subsystem_methods};
+use wpilib_macros::{command, command_end, command_provider, use_subsystem};
+use wpilib::command::manager::{Subsystem, SubsystemRef};
 
 crate_namespace!();
 
@@ -23,91 +24,71 @@ struct TestSubsystem {
     calls: i32,
 }
 
-subsystem!(TestSubsystem);
 
-#[subsystem_methods]
 impl TestSubsystem {
-    #[new]
-    const fn constructor() -> Self {
+    fn new() -> Self {
         Self {
             motor_running: false,
             default_running: false,
             calls: 0,
         }
     }
-
-    #[periodic]
-    fn periodic(&self) {
-        println!("Periodic");
-    }
-
-    pub fn is_motor_running(&self) -> bool {
+    fn is_motor_running(&self) -> bool {
         self.motor_running
     }
 
-    pub fn start_motor(&mut self) {
-        self.motor_running = true;
-    }
-    pub fn stop_motor(&mut self) {
-        self.motor_running = false;
-    }
-
-    #[dont_static]
-    fn inner_add_call(&mut self) {
-        self.calls += 1;
-    }
-
-    pub fn add_call(&mut self) {
-        self.inner_add_call()
-    }
-
-    pub fn sub_call(&mut self) {
-        self.calls -= 1;
-    }
-    pub fn get_calls(&mut self) -> i32 {
+    fn get_calls(&mut self) -> i32 {
         self.calls
     }
-    pub fn set_default_running(&mut self) {
-        self.default_running = true;
-    }
 
-    pub fn is_default_running(&mut self) -> bool {
+    fn is_default_running(&mut self) -> bool {
         self.default_running
     }
-
-    #[default_command]
-    pub fn default(&self) -> Command {
-        CommandBuilder::new()
-            .init(|| ())
-            .periodic(|| {
-                println!("default");
-                Self::set_default_running();
-            })
-            .is_finished(|| false)
-            .end(|interrupted| if interrupted {})
-            .with_requirements(vec![Self::suid()])
-            .build()
-            .with_name("Activate Motor")
+}
+impl SubsystemRef<TestSubsystem> {
+    pub fn default_command(&self) -> Command {
+        CommandBuilder::new().init(|| ())
+        .periodic(
+            command!{self,
+                {
+                    println!("default");
+                    self.default_running = true;
+                }
+            }
+        )
+        .is_finished(|| false)
+        .end(command_end!{{}})
+        .with_requirements(vec![1])
+        .build()
+        .with_name("Activate Motor")
+    
     }
 
     pub fn cmd_activate_motor(&self) -> Command {
-        CommandBuilder::new()
-            .init(|| {
-                println!("cmd_activate_motor");
-                Self::add_call();
-                Self::start_motor();
-            })
-            .periodic(|| ())
-            .is_finished(|| false)
-            .end(|interrupted| {
-                if interrupted {
-                    Self::sub_call();
+        CommandBuilder::new().init(
+            command!{self,
+                {
+                    println!("cmd_activate_motor"); 
+                    self.calls += 1;
+                    self.motor_running = true;
                 }
-                Self::stop_motor();
-            })
-            .with_requirements(vec![Self::suid()])
-            .build()
-            .with_name("Activate Motor")
+            }
+        )
+        .periodic(|| ())
+        .is_finished(|| false)
+        .end(
+            command_end!{self,
+                {
+                    if interrupted {
+                        self.calls -= 1;
+                    }
+                    self.motor_running = false;
+                }
+            }
+        )
+        .with_requirements(vec![1])
+        .build()
+        .with_name("Activate Motor")
     }
 
     #[allow(dead_code)]
@@ -116,8 +97,17 @@ impl TestSubsystem {
     }
 
     pub fn reset(&mut self) {
-        self.calls = 0;
-        self.motor_running = false;
+        use_subsystem!{self,
+            {
+                self.calls = 0;
+                self.motor_running = false;
+            }
+        }
+    }
+}
+impl Subsystem for TestSubsystem {
+    fn periodic(&self) {
+        println!("Periodic");
     }
 }
 
@@ -142,11 +132,17 @@ fn test_command() {
 }
 
 fn test_subsystem() {
-    register_subsystem!(TestSubsystem);
-    assert!(!TestSubsystem::is_default_running());
+    CommandManager::clear_cond_schedulers();
+    CommandManager::cancel_all();
+    // CommandManager::register_subsystem(
+    //     TestSubsystem::suid(),
+    //     || TestSubsystem::periodic(),
+    //     Some(TestSubsystem::default_command()),
+    // );
+    let instance = register_subsystem!(TestSubsystem);
+    assert!(!instance.0.lock().is_default_running());
     CommandManager::run();
-    std::thread::sleep(std::time::Duration::from_millis(100));
-    assert!(TestSubsystem::is_default_running());
+    assert!(instance.0.lock().is_default_running());
 }
 
 struct Immediately {}
@@ -161,28 +157,39 @@ impl Condition for Immediately {
 }
 
 fn test_on_true() {
+    CommandManager::clear_cond_schedulers();
+    CommandManager::cancel_all();
+    let instance = register_subsystem!(TestSubsystem);
     let mut scheduler = ConditionalScheduler::new();
 
     let cond = conditions::on_true(|| true);
+    
+        
+    scheduler.add_cond(cond,
+        command_provider!{instance,
+            {
+                instance.cmd_activate_motor()
+            }
+        }
+    );
 
-    scheduler.add_cond(&cond, TestSubsystem::cmd_activate_motor);
-
-    assert!(!TestSubsystem::is_motor_running());
-    assert_eq!(TestSubsystem::get_calls(), 0);
+    assert!(!instance.0.lock().is_motor_running());
+    assert_eq!(instance.0.lock().get_calls(), 0);
 
     CommandManager::add_cond_scheduler(scheduler);
     CommandManager::run();
     CommandManager::run();
     CommandManager::run();
-    assert!(TestSubsystem::is_motor_running());
-    assert_eq!(TestSubsystem::get_calls(), 1);
+    assert!(instance.0.lock().is_motor_running());
+    assert_eq!(instance.0.lock().get_calls(), 1);
 }
 
 fn run_in_clean_state(func: fn()) {
     func();
     CommandManager::purge_state_test();
-    TestSubsystem::reset();
+    
 }
+
 
 #[test]
 fn parent_test() {

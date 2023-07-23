@@ -5,7 +5,6 @@ use nalgebra::{
 use num::clamp;
 
 use crate::math::units::angle::Radian;
-use crate::math::util::math_util::MathUtil;
 
 use super::Rotation2d;
 

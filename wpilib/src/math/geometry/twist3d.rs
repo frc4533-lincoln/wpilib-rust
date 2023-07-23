@@ -13,6 +13,7 @@ pub struct Twist3d {
 }
 
 impl Twist3d {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             dx: 0.0.into(),
@@ -43,6 +44,12 @@ impl Twist3d {
     }
 }
 
+impl Default for Twist3d {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl From<Twist2d> for Twist3d {
     fn from(twist: Twist2d) -> Self {
         Self::new_dv(twist.dx, twist.dy, 0.0, 0.0, 0.0, twist.dtheta)
@@ -50,7 +57,7 @@ impl From<Twist2d> for Twist3d {
 }
 
 impl From<Twist3d> for Twist2d {
-    fn from (twist: Twist3d) -> Self {
+    fn from(twist: Twist3d) -> Self {
         Self::new_dv(twist.dx, twist.dy, twist.rz)
     }
 }

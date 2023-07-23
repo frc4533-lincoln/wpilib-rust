@@ -13,10 +13,12 @@ pub struct Translation3d {
 }
 
 impl Translation3d {
+    #[must_use]
     pub fn new() -> Self {
         Self::new_xyz(0.0, 0.0, 0.0)
     }
 
+    #[must_use]
     pub fn new_xyz(x: impl Into<Meter>, y: impl Into<Meter>, z: impl Into<Meter>) -> Self {
         Self {
             x: x.into(),
@@ -25,6 +27,7 @@ impl Translation3d {
         }
     }
 
+    #[must_use]
     pub fn new_dist_angle(dist: impl Into<Meter>, angle: Rotation3d) -> Self {
         let rectangle = Self::new_xyz(dist, 0.0, 0.0).rotate_by(&angle);
         Self {
@@ -34,41 +37,49 @@ impl Translation3d {
         }
     }
 
-    pub fn get_distance(&self, other: &Self) -> Meter {
+    #[must_use]
+    fn get_distance(&self, other: &Self) -> Meter {
         ComplexField::sqrt(
             (other.x - self.x).square() + (other.y - self.y).square() + (other.z - self.z).square(),
         )
     }
 
+    #[must_use]
     pub fn get_norm(&self) -> Meter {
         ComplexField::sqrt(self.x.square() + self.y.square() + self.z.square())
     }
 
+    #[must_use]
     pub fn rotate_by(&self, other: &Rotation3d) -> Self {
         let p = Quaternion::new(0.0, self.x.into(), self.y.into(), self.z.into());
         let mut qprime: Quaternion<f64> = other.q.quaternion() * p;
-        //TODO: invertion quaternion meanie
-        if let Some(invert) = other.q.try_inverse() {
-            qprime = qprime * invert;
-        } else {
-            panic!("ROTATED BY ZERO QUATERNION 😪")
-        }
+        //TODO: inversion quaternion meanie
+        other.q.try_inverse().map_or_else(
+            || panic!("ROTATED BY ZERO QUATERNION 😪"),
+            |invert| {
+                qprime *= invert;
+            },
+        );
 
         Self::new_xyz(qprime.i, qprime.j, qprime.k)
     }
 
+    #[must_use]
     pub fn plus(&self, other: &Self) -> Self {
         Self::new_xyz(self.x + other.x, self.y + other.y, self.z + other.z)
     }
 
+    #[must_use]
     pub fn minus(&self, other: &Self) -> Self {
         Self::new_xyz(self.x - other.x, self.y - other.y, self.z - other.z)
     }
 
+    #[must_use]
     pub fn unary_minus(&self) -> Self {
         Self::new_xyz(-self.x, -self.y, -self.z)
     }
 
+    #[must_use]
     pub fn times(&self, scalar: f64) -> Self {
         Self::new_xyz(
             f64::from(self.x) * scalar,
@@ -77,16 +88,24 @@ impl Translation3d {
         )
     }
 
+    #[must_use]
     pub fn div(&self, scalar: f64) -> Self {
         self.times(1.0 / scalar)
     }
 
-    pub fn interpolate(&self, end_value: Translation3d, t: f64) -> Self {
+    #[must_use]
+    pub fn interpolate(&self, end_value: Self, t: f64) -> Self {
         Self::new_xyz(
             MathUtil::interpolate(self.x.into(), end_value.x.into(), t),
             MathUtil::interpolate(self.y.into(), end_value.y.into(), t),
             MathUtil::interpolate(self.z.into(), end_value.z.into(), t),
         )
+    }
+}
+
+impl Default for Translation3d {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

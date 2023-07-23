@@ -30,12 +30,12 @@ pub fn degree_per_second_to_rotation_per_minute(degree_per_second: f64) -> f64 {
 
 #[must_use]
 pub fn radian_per_second_to_rotation_per_second(radian_per_second: f64) -> f64 {
-    degree_per_second_to_rotation_per_second(radian_per_second * 180.0 / std::f64::consts::PI)
+    degree_per_second_to_rotation_per_second(radian_per_second.to_degrees())
 }
 
 #[must_use]
 pub fn radian_per_second_to_rotation_per_minute(radian_per_second: f64) -> f64 {
-    degree_per_second_to_rotation_per_minute(radian_per_second * 180.0 / std::f64::consts::PI)
+    degree_per_second_to_rotation_per_minute(radian_per_second.to_degrees())
 }
 
 #[must_use]

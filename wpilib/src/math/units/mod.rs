@@ -9,5 +9,6 @@ pub mod linear_velocity;
 pub mod mass;
 pub mod moment_of_inertia;
 pub mod temperature;
+mod test;
 pub mod time;
 pub mod torque;

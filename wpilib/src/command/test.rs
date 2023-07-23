@@ -128,7 +128,7 @@ fn test_command() {
         CommandManager::run();
     })
     .join()
-    .unwrap();
+    .expect("Failed to join thread");
 }
 
 fn test_subsystem() {
@@ -152,7 +152,7 @@ impl Condition for Immediately {
         ConditionResponse::Start
     }
     fn clone_boxed(&self) -> Box<dyn Condition> {
-        Box::new(Immediately {})
+        Box::new(Self {})
     }
 }
 

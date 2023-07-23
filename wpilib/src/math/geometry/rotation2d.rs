@@ -1,7 +1,7 @@
 use crate::math::units::{angle::Radian, distance::Meter};
-use crate::math::util::math_util::MathUtil;
 
 use nalgebra::ComplexField;
+use num::clamp;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Rotation2d {
@@ -10,6 +10,7 @@ pub struct Rotation2d {
     pub cos: f64,
 }
 impl Rotation2d {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             value: 0.0.into(),
@@ -46,37 +47,47 @@ impl Rotation2d {
         }
     }
 
+    #[must_use]
     pub fn plus(&self, other: &Self) -> Self {
         self.rotate_by(other)
     }
+    #[must_use]
     pub fn minus(&self, other: &Self) -> Self {
         self.rotate_by(&other.unary_minus())
     }
+    #[must_use]
     pub fn unary_minus(&self) -> Self {
         Self::new_angle(-self.value)
     }
+    #[must_use]
     pub fn times(&self, scalar: f64) -> Self {
         Self::new_angle(f64::from(self.value) * scalar)
     }
+    #[must_use]
     pub fn div(&self, scalar: f64) -> Self {
         self.times(1.0 / scalar)
     }
+    #[must_use]
     pub fn rotate_by(&self, other: &Self) -> Self {
         Self::new_xy(
-            self.cos * other.cos - self.sin * other.sin,
-            self.cos * other.sin - self.sin * other.cos,
+            self.cos.mul_add(other.cos, -self.sin * other.sin),
+            self.cos.mul_add(other.sin, -self.sin * other.cos),
         )
     }
 
+    #[must_use]
     pub fn get_tan(&self) -> f64 {
         self.sin / self.cos
     }
 
+    #[must_use]
     pub fn interpolate(&self, end_value: &Self, t: f64) -> Self {
-        self.plus(
-            &end_value
-                .minus(self)
-                .times(MathUtil::clamp_double(t, 0.0, 1.0)),
-        )
+        self.plus(&end_value.minus(self).times(clamp(t, 0.0, 1.0)))
+    }
+}
+
+impl Default for Rotation2d {
+    fn default() -> Self {
+        Self::new()
     }
 }

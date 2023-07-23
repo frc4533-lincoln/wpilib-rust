@@ -67,20 +67,3 @@ impl Centimeter {
         MeterPerSecond::new(self.value() * seconds.value() / 100.0)
     }
 }
-
-// #[cfg(test)]
-// mod test {
-//     use super::units::distance::*;
-
-//     #[test]
-//     fn test_meter_to_feet() {
-//         let meter = Meter::new(1.0);
-//         let feet = Feet::new(3.28084);
-//         assert_eq!(feet, meter);
-//         assert_eq!(meter, feet);
-//         let double = feet + meter;
-//         assert_eq!(double, Feet::new(6.56168));
-//         assert_eq!(double, Meter::new(2.0));
-//         assert!(double > feet);
-//     }
-// }

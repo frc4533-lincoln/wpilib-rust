@@ -1,17 +1,11 @@
 use nalgebra::ComplexField;
+use num::clamp;
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct MathUtil {}
 
 impl MathUtil {
-    pub fn clamp_int(value: i32, low: i32, high: i32) -> i32 {
-        low.max(value.min(high))
-    }
-
-    pub fn clamp_double(value: f64, low: f64, high: f64) -> f64 {
-        low.max(value.min(high))
-    }
-
+    #[must_use]
     pub fn apply_deadband(value: f64, deadband: f64, max_magnitude: f64) -> f64 {
         if ComplexField::abs(value) > deadband {
             if max_magnitude / deadband > 1.0e12 {
@@ -52,19 +46,19 @@ impl MathUtil {
     }
 
     pub fn interpolate(start_value: f64, end_value: f64, t: f64) -> f64 {
-        start_value + (end_value - start_value) * Self::clamp_double(t, 0.0, 1.0)
+        start_value + (end_value - start_value) * clamp(t, 0.0, 1.0)
     }
 
     pub fn is_near(expected: f64, actual: f64, tolerance: f64) -> bool {
         if tolerance < 0.0 {
-            panic!("Tolerance must be a non-negative number!");
+            panic!("Tolerance must be a non-negative number greater than 0!");
         }
         ComplexField::abs(expected - actual) < tolerance
     }
 
     pub fn is_near_min_max(expected: f64, actual: f64, tolerance: f64, min: f64, max: f64) -> bool {
         if tolerance < 0.0 {
-            panic!("Tolerance must be a non-negative number!");
+            panic!("Tolerance must be a non-negative number greater than 0!");
         }
         // Max error is exactly halfway between the min and max
         let error_bound = (max - min) / 2.0;

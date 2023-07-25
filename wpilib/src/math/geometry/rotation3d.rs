@@ -3,6 +3,7 @@ use nalgebra::{
     Rotation3, Unit, UnitQuaternion, Vector3, U1, U3,
 };
 use num::clamp;
+use std::ops;
 
 use crate::math::units::angle::Radian;
 
@@ -15,29 +16,20 @@ pub struct Rotation3d {
 
 impl Rotation3d {
     #[must_use]
-    pub fn new() -> Self {
-        Self {
-            q: UnitQuaternion::new_normalize(Quaternion::new(1.0, 0.0, 0.0, 0.0)),
-        }
-    }
-    #[must_use]
-    pub fn new_quaternion(q: Quaternion<f64>) -> Self {
-        Self {
-            q: UnitQuaternion::new_normalize(q),
-        }
-    }
-    #[must_use]
-    pub fn new_euler_angles(
-        roll: impl Into<Radian>,
-        pitch: impl Into<Radian>,
-        yaw: impl Into<Radian>,
-    ) -> Self {
+    pub fn new(roll: impl Into<Radian>, pitch: impl Into<Radian>, yaw: impl Into<Radian>) -> Self {
         Self {
             q: UnitQuaternion::from_euler_angles(
                 f64::from(roll.into()),
                 f64::from(pitch.into()),
                 f64::from(yaw.into()),
             ),
+        }
+    }
+
+    #[must_use]
+    pub fn new_quaternion(q: Quaternion<f64>) -> Self {
+        Self {
+            q: UnitQuaternion::new_normalize(q),
         }
     }
 
@@ -69,7 +61,7 @@ impl Rotation3d {
         let dot_norm = dot / norm_product;
 
         if dot_norm > 1.0 - 1E-9 {
-            Self::new()
+            Self::default()
         } else if dot_norm < -1.0 + 1E-9 {
             let x: Matrix<f64, Const<3>, Const<1>, ArrayStorage<f64, 3, 1>> =
                 Vector3::new(1.0, 0.0, 0.0);
@@ -126,7 +118,7 @@ impl Rotation3d {
     }
 
     #[must_use]
-    pub fn div(&self, scalar: f64) -> Self {
+    pub fn division(&self, scalar: f64) -> Self {
         self.times(1.0 / scalar)
     }
 
@@ -201,18 +193,86 @@ impl Rotation3d {
 
 impl Default for Rotation3d {
     fn default() -> Self {
-        Self::new()
+        Self {
+            q: UnitQuaternion::new_normalize(Quaternion::new(1.0, 0.0, 0.0, 0.0)),
+        }
     }
 }
 
 impl From<Rotation2d> for Rotation3d {
     fn from(r: Rotation2d) -> Self {
-        Self::new_euler_angles(0.0, 0.0, r.value)
+        Self::new(0.0, 0.0, r.value)
     }
 }
 
 impl From<Rotation3d> for Rotation2d {
     fn from(r: Rotation3d) -> Self {
-        Self::new_angle(r.get_z())
+        Self::new(r.get_z())
+    }
+}
+
+impl ops::Add<Self> for Rotation3d {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        self.plus(&rhs)
+    }
+}
+
+impl ops::AddAssign<Self> for Rotation3d {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = self.plus(&rhs);
+    }
+}
+
+impl ops::Sub<Self> for Rotation3d {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        self.minus(&rhs)
+    }
+}
+
+impl ops::SubAssign<Self> for Rotation3d {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = self.minus(&rhs);
+    }
+}
+
+impl ops::Neg for Rotation3d {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        self.unary_minus()
+    }
+}
+
+impl ops::Mul<f64> for Rotation3d {
+    type Output = Self;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        self.times(rhs)
+    }
+}
+
+impl ops::Mul<Rotation3d> for f64 {
+    type Output = Rotation3d;
+
+    fn mul(self, rhs: Rotation3d) -> Self::Output {
+        rhs.times(self)
+    }
+}
+
+impl ops::MulAssign<f64> for Rotation3d {
+    fn mul_assign(&mut self, rhs: f64) {
+        *self = self.times(rhs);
+    }
+}
+
+impl ops::Div<f64> for Rotation3d {
+    type Output = Self;
+
+    fn div(self, rhs: f64) -> Self::Output {
+        self.division(rhs)
     }
 }

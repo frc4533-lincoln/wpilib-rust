@@ -30,6 +30,7 @@ tracing-appender = "^0.2"
 nalgebra = "0.32.2"
 num = "0.4.0"
 simba = "0.8.1"
+approx = "0.5.1"
 
 wpilib-macros = { path = "../wpilib-macros", version = "0.1.0" }
 

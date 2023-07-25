@@ -15,8 +15,8 @@ impl Pose3d {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            translation: Translation3d::new(),
-            rotation: Rotation3d::new(),
+            translation: Translation3d::default(),
+            rotation: Rotation3d::default(),
         }
     }
 
@@ -34,7 +34,7 @@ impl Pose3d {
         z: impl Into<Meter>,
         rotation: Rotation3d,
     ) -> Self {
-        Self::new_trans_rot(Translation3d::new_xyz(x, y, z), rotation)
+        Self::new_trans_rot(Translation3d::new(x, y, z), rotation)
     }
 
     #[must_use]
@@ -151,7 +151,7 @@ impl Pose3d {
     // }
 
     fn rotation_vector_to_matrix(&self, rotation: Vector3<Radian>) -> Matrix3<Radian> {
-        nalgebra::Matrix3::new(
+        Matrix3::new(
             0.0.into(),
             -rotation[2],
             rotation[1],
@@ -179,6 +179,6 @@ impl From<Pose2d> for Pose3d {
 
 impl From<Pose3d> for Pose2d {
     fn from(pose: Pose3d) -> Self {
-        Self::new_trans_rot(pose.translation.into(), pose.rotation.into())
+        Self::new(pose.translation.into(), pose.rotation.into())
     }
 }

@@ -9,16 +9,7 @@ pub struct Twist2d {
 
 impl Twist2d {
     #[must_use]
-    pub fn new() -> Self {
-        Self {
-            dx: 0.0.into(),
-            dy: 0.0.into(),
-            dtheta: 0.0.into(),
-        }
-    }
-
-    #[must_use]
-    pub fn new_dv(dx: impl Into<Meter>, dy: impl Into<Meter>, dtheta: impl Into<Radian>) -> Self {
+    pub fn new(dx: impl Into<Meter>, dy: impl Into<Meter>, dtheta: impl Into<Radian>) -> Self {
         Self {
             dx: dx.into(),
             dy: dy.into(),
@@ -29,6 +20,10 @@ impl Twist2d {
 
 impl Default for Twist2d {
     fn default() -> Self {
-        Self::new()
+        Self {
+            dx: 0.0.into(),
+            dy: 0.0.into(),
+            dtheta: 0.0.into(),
+        }
     }
 }

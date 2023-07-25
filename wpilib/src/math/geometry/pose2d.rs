@@ -14,15 +14,7 @@ pub struct Pose2d {
 
 impl Pose2d {
     #[must_use]
-    pub fn new() -> Self {
-        Self {
-            translation: Translation2d::new(),
-            rotation: Rotation2d::new(),
-        }
-    }
-
-    #[must_use]
-    pub const fn new_trans_rot(translation: Translation2d, rotation: Rotation2d) -> Self {
+    pub const fn new(translation: Translation2d, rotation: Rotation2d) -> Self {
         Self {
             translation,
             rotation,
@@ -30,7 +22,7 @@ impl Pose2d {
     }
 
     pub fn new_xy_rot(x: impl Into<Meter>, y: impl Into<Meter>, rotation: Rotation2d) -> Self {
-        Self::new_trans_rot(Translation2d::new_xy(x, y), rotation)
+        Self::new(Translation2d::new(x, y), rotation)
     }
 
     #[must_use]
@@ -46,7 +38,7 @@ impl Pose2d {
 
     #[must_use]
     pub fn times(&self, scalar: f64) -> Self {
-        Self::new_trans_rot(self.translation.times(scalar), self.rotation.times(scalar))
+        Self::new(self.translation.times(scalar), self.rotation.times(scalar))
     }
 
     #[must_use]
@@ -56,7 +48,7 @@ impl Pose2d {
 
     #[must_use]
     pub fn transform_by(&self, other: Transform2d) -> Self {
-        Self::new_trans_rot(
+        Self::new(
             self.translation
                 .plus(&other.translation.rotate_by(&self.rotation)),
             other.rotation.plus(&self.rotation),
@@ -65,8 +57,8 @@ impl Pose2d {
 
     #[must_use]
     pub fn relative_to(&self, other: &Self) -> Self {
-        let transform = Transform2d::new_pose_pose(*other, *self);
-        Self::new_trans_rot(transform.translation, transform.rotation)
+        let transform = Transform2d::new(*other, *self);
+        Self::new(transform.translation, transform.rotation)
     }
 
     #[must_use]
@@ -89,7 +81,7 @@ impl Pose2d {
             c = (1.0 - cos_theta) / dtheta;
         }
         let transform = Transform2d::new_trans_rot(
-            Translation2d::new_xy(dx.mul_add(s, -dy * c), dx.mul_add(c, dy * s)),
+            Translation2d::new(dx.mul_add(s, -dy * c), dx.mul_add(c, dy * s)),
             Rotation2d::new_xy(cos_theta, sin_theta),
         );
         self.plus(transform)
@@ -121,7 +113,7 @@ impl Pose2d {
 
         let dx = translation_part.x;
         let dy = translation_part.y;
-        Twist2d::new_dv(dx, dy, dtheta)
+        Twist2d::new(dx, dy, dtheta)
     }
 
     //pls work 🥺🙏
@@ -147,7 +139,7 @@ impl Pose2d {
             *end_value
         } else {
             let twist = self.log(end_value);
-            let scaled_twist = Twist2d::new_dv(
+            let scaled_twist = Twist2d::new(
                 f64::from(twist.dx) * t,
                 f64::from(twist.dy) * t,
                 f64::from(twist.dtheta) * t,
@@ -159,6 +151,9 @@ impl Pose2d {
 
 impl Default for Pose2d {
     fn default() -> Self {
-        Self::new()
+        Self {
+            translation: Translation2d::default(),
+            rotation: Rotation2d::default(),
+        }
     }
 }

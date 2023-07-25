@@ -1,4 +1,5 @@
 use nalgebra::{ComplexField, Translation2};
+use std::ops;
 
 use super::Rotation2d;
 use crate::math::units::distance::Meter;
@@ -12,14 +13,7 @@ pub struct Translation2d {
 
 impl Translation2d {
     #[must_use]
-    pub fn new() -> Self {
-        Self {
-            x: 0.0.into(),
-            y: 0.0.into(),
-        }
-    }
-    #[must_use]
-    pub fn new_xy(x: impl Into<Meter>, y: impl Into<Meter>) -> Self {
+    pub fn new(x: impl Into<Meter>, y: impl Into<Meter>) -> Self {
         Self {
             x: x.into(),
             y: y.into(),
@@ -55,7 +49,7 @@ impl Translation2d {
     pub fn rotate_by(&self, other: &Rotation2d) -> Self {
         let x = f64::from(self.x);
         let y = f64::from(self.y);
-        Self::new_xy(
+        Self::new(
             x.mul_add(other.cos, -y * other.sin),
             x.mul_add(other.sin, y * other.cos),
         )
@@ -63,27 +57,27 @@ impl Translation2d {
 
     #[must_use]
     pub fn plus(&self, other: &Self) -> Self {
-        Self::new_xy(self.x + other.x, self.y + other.y)
+        Self::new(self.x + other.x, self.y + other.y)
     }
 
     #[must_use]
     pub fn minus(&self, other: &Self) -> Self {
-        Self::new_xy(self.x - other.x, self.y - other.y)
+        Self::new(self.x - other.x, self.y - other.y)
     }
 
     #[must_use]
     pub fn unary_minus(&self) -> Self {
-        Self::new_xy(-self.x, -self.y)
+        Self::new(-self.x, -self.y)
     }
 
     #[must_use]
     pub fn times(&self, scalar: f64) -> Self {
-        Self::new_xy(f64::from(self.x) * scalar, f64::from(self.y) * scalar)
+        Self::new(f64::from(self.x) * scalar, f64::from(self.y) * scalar)
     }
 
     #[must_use]
-    pub fn div(&self, scalar: f64) -> Self {
-        Self::new_xy(f64::from(self.x) / scalar, f64::from(self.y) / scalar)
+    pub fn divide(&self, scalar: f64) -> Self {
+        Self::new(f64::from(self.x) / scalar, f64::from(self.y) / scalar)
     }
 
     //pls work 🥺🙏
@@ -115,7 +109,7 @@ impl Translation2d {
 
     #[must_use]
     pub fn interpolate(&self, other: &Self, t: f64) -> Self {
-        Self::new_xy(
+        Self::new(
             MathUtil::interpolate(f64::from(self.x), f64::from(other.x), t),
             MathUtil::interpolate(f64::from(self.y), f64::from(other.y), t),
         )
@@ -124,6 +118,72 @@ impl Translation2d {
 
 impl Default for Translation2d {
     fn default() -> Self {
-        Self::new()
+        Self::new(Meter::new(0.0), Meter::new(0.0))
+    }
+}
+
+impl ops::Add for Translation2d {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        self.plus(&other)
+    }
+}
+
+impl ops::AddAssign for Translation2d {
+    fn add_assign(&mut self, other: Self) {
+        *self = self.plus(&other);
+    }
+}
+
+impl ops::Sub for Translation2d {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self {
+        self.minus(&other)
+    }
+}
+
+impl ops::SubAssign for Translation2d {
+    fn sub_assign(&mut self, other: Self) {
+        *self = self.minus(&other);
+    }
+}
+
+impl ops::Neg for Translation2d {
+    type Output = Self;
+    fn neg(self) -> Self {
+        self.unary_minus()
+    }
+}
+
+impl ops::Mul<f64> for Translation2d {
+    type Output = Self;
+    fn mul(self, scalar: f64) -> Self {
+        self.times(scalar)
+    }
+}
+
+impl ops::Mul<Translation2d> for f64 {
+    type Output = Translation2d;
+    fn mul(self, translation: Translation2d) -> Translation2d {
+        translation.times(self)
+    }
+}
+
+impl ops::MulAssign<f64> for Translation2d {
+    fn mul_assign(&mut self, scalar: f64) {
+        *self = self.times(scalar);
+    }
+}
+
+impl ops::Div<f64> for Translation2d {
+    type Output = Self;
+    fn div(self, scalar: f64) -> Self {
+        self.divide(scalar)
+    }
+}
+
+impl ops::DivAssign<f64> for Translation2d {
+    fn div_assign(&mut self, scalar: f64) {
+        *self = self.divide(scalar);
     }
 }

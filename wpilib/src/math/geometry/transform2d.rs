@@ -1,4 +1,5 @@
 use super::{Pose2d, Rotation2d, Translation2d};
+use std::ops;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Transform2d {
@@ -8,15 +9,7 @@ pub struct Transform2d {
 
 impl Transform2d {
     #[must_use]
-    pub fn new() -> Self {
-        Self {
-            translation: Translation2d::new(),
-            rotation: Rotation2d::new(),
-        }
-    }
-
-    #[must_use]
-    pub fn new_pose_pose(initial: Pose2d, last: Pose2d) -> Self {
+    pub fn new(initial: Pose2d, last: Pose2d) -> Self {
         let translation = last
             .translation
             .minus(&initial.translation)
@@ -42,16 +35,21 @@ impl Transform2d {
     }
 
     #[must_use]
-    pub fn div(&self, scalar: f64) -> Self {
+    pub fn divide(&self, scalar: f64) -> Self {
         self.times(1.0 / scalar)
     }
 
     #[must_use]
     pub fn plus(&self, other: &Self) -> Self {
-        Self::new_pose_pose(
-            Pose2d::new(),
-            Pose2d::new().transform_by(*self).transform_by(*other),
+        Self::new(
+            Pose2d::default(),
+            Pose2d::default().transform_by(*self).transform_by(*other),
         )
+    }
+
+    #[must_use]
+    pub fn minus(&self, other: &Self) -> Self {
+        self.plus(&other.inverse())
     }
 
     #[must_use]
@@ -67,6 +65,72 @@ impl Transform2d {
 
 impl Default for Transform2d {
     fn default() -> Self {
-        Self::new()
+        Self::new(Pose2d::default(), Pose2d::default())
+    }
+}
+
+impl ops::Add for Transform2d {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        self.plus(&other)
+    }
+}
+
+impl ops::AddAssign for Transform2d {
+    fn add_assign(&mut self, other: Self) {
+        *self = self.plus(&other);
+    }
+}
+
+impl ops::Sub for Transform2d {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self {
+        self.minus(&other)
+    }
+}
+
+impl ops::SubAssign for Transform2d {
+    fn sub_assign(&mut self, other: Self) {
+        *self = self.minus(&other);
+    }
+}
+
+impl ops::Neg for Transform2d {
+    type Output = Self;
+    fn neg(self) -> Self {
+        self.inverse()
+    }
+}
+
+impl ops::Mul<f64> for Transform2d {
+    type Output = Self;
+    fn mul(self, scalar: f64) -> Self {
+        self.times(scalar)
+    }
+}
+
+impl ops::Mul<Transform2d> for f64 {
+    type Output = Transform2d;
+    fn mul(self, transform: Transform2d) -> Transform2d {
+        transform.times(self)
+    }
+}
+
+impl ops::MulAssign<f64> for Transform2d {
+    fn mul_assign(&mut self, scalar: f64) {
+        *self = self.times(scalar);
+    }
+}
+
+impl ops::Div<f64> for Transform2d {
+    type Output = Self;
+    fn div(self, scalar: f64) -> Self {
+        self.divide(scalar)
+    }
+}
+
+impl ops::DivAssign<f64> for Transform2d {
+    fn div_assign(&mut self, scalar: f64) {
+        *self = self.divide(scalar);
     }
 }

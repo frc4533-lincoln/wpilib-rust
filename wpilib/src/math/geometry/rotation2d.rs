@@ -1,4 +1,6 @@
 use crate::math::units::{angle::Radian, distance::Meter};
+use std::fmt::Display;
+use std::ops;
 
 use nalgebra::ComplexField;
 use num::clamp;
@@ -11,14 +13,7 @@ pub struct Rotation2d {
 }
 impl Rotation2d {
     #[must_use]
-    pub fn new() -> Self {
-        Self {
-            value: 0.0.into(),
-            sin: 0.0,
-            cos: 1.0,
-        }
-    }
-    pub fn new_angle(angle: impl Into<Radian>) -> Self {
+    pub fn new(angle: impl Into<Radian>) -> Self {
         let value: Radian = angle.into();
         Self {
             value,
@@ -57,22 +52,19 @@ impl Rotation2d {
     }
     #[must_use]
     pub fn unary_minus(&self) -> Self {
-        Self::new_angle(-self.value)
+        Self::new(-self.value)
     }
     #[must_use]
     pub fn times(&self, scalar: f64) -> Self {
-        Self::new_angle(f64::from(self.value) * scalar)
+        Self::new(f64::from(self.value) * scalar)
     }
     #[must_use]
-    pub fn div(&self, scalar: f64) -> Self {
+    pub fn divide(&self, scalar: f64) -> Self {
         self.times(1.0 / scalar)
     }
     #[must_use]
     pub fn rotate_by(&self, other: &Self) -> Self {
-        Self::new_xy(
-            self.cos.mul_add(other.cos, -self.sin * other.sin),
-            self.cos.mul_add(other.sin, -self.sin * other.cos),
-        )
+        Self::new(self.value + other.value)
     }
 
     #[must_use]
@@ -88,6 +80,78 @@ impl Rotation2d {
 
 impl Default for Rotation2d {
     fn default() -> Self {
-        Self::new()
+        Self::new(0)
+    }
+}
+
+impl ops::Add for Rotation2d {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self::Output {
+        self.plus(&rhs)
+    }
+}
+
+impl ops::AddAssign for Rotation2d {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = self.plus(&rhs);
+    }
+}
+
+impl ops::Sub for Rotation2d {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self::Output {
+        self.minus(&rhs)
+    }
+}
+
+impl ops::SubAssign for Rotation2d {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = self.minus(&rhs);
+    }
+}
+
+impl ops::Neg for Rotation2d {
+    type Output = Self;
+    fn neg(self) -> Self::Output {
+        self.unary_minus()
+    }
+}
+
+impl ops::Mul<f64> for Rotation2d {
+    type Output = Self;
+    fn mul(self, rhs: f64) -> Self::Output {
+        self.times(rhs)
+    }
+}
+
+impl ops::Mul<Rotation2d> for f64 {
+    type Output = Rotation2d;
+    fn mul(self, rhs: Rotation2d) -> Self::Output {
+        rhs.times(self)
+    }
+}
+
+impl ops::MulAssign<f64> for Rotation2d {
+    fn mul_assign(&mut self, rhs: f64) {
+        *self = self.times(rhs);
+    }
+}
+
+impl ops::Div<f64> for Rotation2d {
+    type Output = Self;
+    fn div(self, rhs: f64) -> Self::Output {
+        self.divide(rhs)
+    }
+}
+
+impl ops::DivAssign<f64> for Rotation2d {
+    fn div_assign(&mut self, rhs: f64) {
+        *self = self.divide(rhs);
+    }
+}
+
+impl Display for Rotation2d {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} rad", self.value)
     }
 }

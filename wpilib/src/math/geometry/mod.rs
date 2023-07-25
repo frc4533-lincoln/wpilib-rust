@@ -2,6 +2,7 @@ mod pose2d;
 mod pose3d;
 mod rotation2d;
 mod rotation3d;
+mod test;
 mod transform2d;
 mod transform3d;
 mod translation2d;

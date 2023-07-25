@@ -10,8 +10,8 @@ impl Transform3d {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            translation: Translation3d::new(),
-            rotation: Rotation3d::new(),
+            translation: Translation3d::default(),
+            rotation: Rotation3d::default(),
         }
     }
 

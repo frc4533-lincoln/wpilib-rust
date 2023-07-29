@@ -227,7 +227,7 @@ impl Arm {
         )
     }
 
-    pub fn calculate(
+    pub fn p_v_calculate(
         &mut self,
         position: impl Into<Radian>,
         velocity: impl Into<RadianPerSecond>,

@@ -9,7 +9,7 @@ edition = "2021"
 
 single_value_channel = "1.2.2"
 
-thiserror = "1.0.40"
+thiserror = "1.0.44"
 no-panic = "0.1"
 
 network-tables = { git = "https://github.com/oh-yes-0-fps/network-tables-rs", version = "^0.1", features = [ "client-v4", "tracing" ] }

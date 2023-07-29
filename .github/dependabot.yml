@@ -8,11 +8,11 @@ updates:
   - package-ecosystem: "cargo" # See documentation for possible values
     directory: "/wpilib" # Location of package manifests
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     target-branch: "dependancies"
   - package-ecosystem: "cargo" # See documentation for possible values
     directory: "/wpilib-macros" # Location of package manifests
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     target-branch: "dependancies"
 

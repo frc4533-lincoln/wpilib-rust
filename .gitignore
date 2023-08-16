@@ -2,3 +2,8 @@
 */target
 /rust-wpilib
 .idea
+*/.idea
+.vscode
+*/.vscode
+Cargo.lock
+*/Cargo.lock
